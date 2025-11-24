@@ -1,7 +1,7 @@
 
 
 # Organization 
-(Tutaj będziemy )
+Here we put parts that we agreed on, and also additional materials
 ## Articles 
 
 ## Programming organization 
