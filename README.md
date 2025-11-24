@@ -1,14 +1,14 @@
 
 
 # Organization 
-
+(Tutaj będziemy )
 ## Articles 
 
-# Programming organization 
+## Programming organization 
 
-## Part 1
+### Part 1
 
-## Part 2
+### Part 2
 
 
 # TODO / ideas
