@@ -1,7 +1,27 @@
 
+# New
 
-# Organization 
-Here we put parts that we agreed on, and also additional materials
+## Initialization 
+To use project repository after fork you need to:
+1. Synchronize dependencies
+```bash
+uv sync
+```
+2. Activate environment
+```bash
+source .venv/bin/activate
+```
+3. Install library in development mode
+```bash
+uv pip install -e .
+```
+To run `path/script.py` you need to run:
+```bash
+uv run python path/script
+```
+
+
+# Old
 ## Articles 
 
 ## Programming organization 
