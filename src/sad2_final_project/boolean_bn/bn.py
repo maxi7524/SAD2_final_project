@@ -290,6 +290,7 @@ class BN():
             last_state = next_state
 
             if i % self.sampling_frequency == 0:
+                # TODO sprawdzić czy to działa, bo struktura atraktorów to" `list[set[tuple[int]]]`, zatem z tego co rozumiem, będzie to: `lista zbiorów, których elementami są wszystkie elementu jednego atraktora` czyli trzeba by sprawdzić czy next_state jest w jednym ze zbiorów self.attractors 
                 if next_state in self.attractors:
                     attractor_counter += 1
                 else:

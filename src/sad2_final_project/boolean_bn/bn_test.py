@@ -1,6 +1,6 @@
 import unittest
 from boolean import BooleanAlgebra
-from bn import BN  # replace with the actual filename of your BN script
+from .bn import BN  # replace with the actual filename of your BN script
 
 class TestBN(unittest.TestCase):
     def setUp(self):
