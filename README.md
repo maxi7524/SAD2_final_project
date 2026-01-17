@@ -8,6 +8,49 @@ Here we put parts that we agreed on, and also additional materials
 
 ### Part 1
 
+The `BN` class handles:
+
+* Boolean network construction (random or user-defined functions),
+* synchronous and asynchronous updates,
+* trajectory simulation,
+* state transition system (STS) generation,
+* attractor detection and visualization.
+
+---
+
+#### `simulate_trajectory()` – Notes for Future Development
+
+This method is central to dataset generation and is likely to be extended. Currently, it:
+
+* Starts from a **random initial state**.
+* Simulates updates for
+  `n = (trajectory_length - 1) * sampling_frequency` steps.
+* Samples every `sampling_frequency` steps.
+* Returns:
+
+  * the trajectory,
+  * number of sampled states in attractors,
+  * number of sampled transient states.
+
+---
+
+#### Network Generation
+
+* Boolean functions are either:
+
+  * provided explicitly, or
+  * generated randomly with 2–3 parents per node.
+* Parent selection and operator choice (`&`, `|`) can be modified for different network topologies or function complexity.
+
+---
+
+#### Attractors & STS
+
+* Attractors are computed from the full state transition system using `networkx.attracting_components`.
+* The STS is rebuilt when needed; caching could improve performance for larger networks.
+
+---
+
 ### Part 2
 
 

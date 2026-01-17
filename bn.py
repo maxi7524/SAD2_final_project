@@ -4,8 +4,20 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import random
 from typing import Literal
+import logging
+
+# --- Logger configuration ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 
 class BN():
+    """
+    Class for generating Boolean Networks which supports generating trajectories
+    """
     __bool_algebra = BooleanAlgebra()
 
 
@@ -24,7 +36,6 @@ class BN():
 
         return tuple(state)
 
-    # added
     def _state_to_expression(self, state: tuple[int, ...]) -> dict:
         """
         Converts a Boolean network state represented as 0s and 1s into a dictionary
@@ -36,7 +47,6 @@ class BN():
                 else self.__bool_algebra.FALSE
             for i in range(self.num_nodes)
         }
-
 
     @staticmethod
     def __state_to_binary_str(state: tuple[int, ...]) -> str:
@@ -56,11 +66,16 @@ class BN():
         return bin_str
 
 
-    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"]):
+    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], sampling_frequency: int, trajectory_length: int, functions: list = None):
         """
         Class constructor
         """
-        self.num_nodes = num_nodes
+        logger.info("Initializing Boolean Network with %d nodes in %s mode.", num_nodes, mode)
+
+        self.sampling_frequency = sampling_frequency # sampling frequency for generating trajectories
+        self.mode = mode # mode in which trajectories will be generated
+        self.trajectory_length = trajectory_length # trajectory length
+        self.num_nodes = num_nodes # number of nodes in boolean network
         self.node_names = [f"x{i}" for i in range(num_nodes)]
         self.TF = {True: 1, False: 0} # helper dictionary for conversion True and False into 1 or 0
 
@@ -68,14 +83,20 @@ class BN():
         for node_name in self.node_names:
             node = self.__bool_algebra.Symbol(node_name)
             self.list_of_nodes.append(node)
-        
-        self.mode = mode
-        
-        # Initialize Boolean functions and compute attractors   
-        self.functions = self.generate_random_functions()
+
+        # Initialize Boolean functions: use provided ones if given, otherwise generate randomly
+        if functions is not None:
+            if len(functions) != self.num_nodes:
+                raise ValueError("Number of functions must match number of nodes.")
+            self.functions = functions
+        else:
+            self.functions = self.generate_random_functions()
+
+        logger.info("Boolean Network initialized successfully.")
+
+        # Compute attractors
         self.attractors = self.get_attractors()
 
-    # added 
     def get_neighbor_states(self, state: tuple[int, ...]) -> set[tuple[int, ...]]:
         """
         Computes the states reachable from the given state in one step of update.
@@ -91,16 +112,17 @@ class BN():
             ]
             return set(reachable_states)
 
-    # added
     def generate_state_transition_system(self)-> nx.DiGraph:
         """
-        Generates state transition system of the Boolean network. Works for both synchronous an asynchronous.
+        Generates state transition system of the Boolean network. Works for both synchronous and asynchronous.
         """
+        logger.info("Generating state transition system (STS).")
+
         G = nx.DiGraph()
 
         # adding nodes
         for n in range(2**self.num_nodes):
-            node = self.__int_to_state(n) # transorm x into binary representation (during iteration we get every possible state)
+            node = self.__int_to_state(n) # transform x into binary representation (during iteration we get every possible state)
             G.add_node(node)
 
         # adding edges
@@ -109,9 +131,9 @@ class BN():
             for reachable in reachable_states:
                 G.add_edge(node, reachable)
 
+        logger.info("State transition system generated with %d states and %d transitions.", G.number_of_nodes(), G.number_of_edges())
         return G
 
-    # added
     def next_synchronous(self, curr_state: tuple[int, ...]) -> tuple[int, ...]:
         """
         Returns the next state under synchronous update.
@@ -127,10 +149,14 @@ class BN():
         }
 
         # x(t+1) = (f1, f2,...,fn) evaluates each function on corresponding coordinate
-        new_state = [self.TF[func.subs(vals).simplify()] for func in self.functions]
+        try:
+            new_state = [self.TF[func.subs(vals).simplify()] for func in self.functions]
+        except Exception as e:
+            logger.error("Error during synchronous state update for state %s: %s", curr_state, e)
+            raise
+
         return tuple(new_state)
 
-    # added
     def next_asynchronous(self, curr_state: tuple[int, ...], coordinate) -> tuple[int, ...]:
         """
         Returns the next state under asynchronous update.
@@ -145,12 +171,16 @@ class BN():
             for i in range(self.num_nodes)
         }
 
-
         # setting coordinate to evaluate function on
         i = coordinate if coordinate is not None else random.randint(0, self.num_nodes - 1)
         
         curr_state = list(curr_state)
-        curr_state[i] = self.TF[self.functions[i].subs(vals).simplify()]
+
+        try:
+            curr_state[i] = self.TF[self.functions[i].subs(vals).simplify()]
+        except Exception as e:
+            logger.error("Error during asynchronous state update for state %s at coordinate %s: %s", curr_state, i, e)
+            raise
         
         return tuple(curr_state)
             
@@ -161,38 +191,115 @@ class BN():
             Returns:
                 list[set[tuple[int]]]: A list of asynchronous attractors. Each attractor is a set of states.
         """
+        logger.info("Computing attractors.")
+
         sts = self.generate_state_transition_system()
 
         attractors = []
-        for attractor in nx.attracting_components(sts):
-            attractors.append(attractor)
+        try:
+            for attractor in nx.attracting_components(sts):
+                attractors.append(attractor)
+        except Exception as e:
+            logger.error("Error while computing attractors: %s", e)
+            raise
 
+        logger.info("Found %d attractors.", len(attractors))
         return attractors
     
-    # Not yet fully implemented; current version is for testing purposes
     def generate_random_functions(self):
         """
-        Fixed Boolean functions for 3 nodes (x0, x1, x2) for testing.
+        Function which chooses parents and generates random Boolean functions.
+        Each variable may also be randomly negated (~).
         """
+        logger.info("Generating random Boolean functions.")
 
-        if self.num_nodes != 3:
-            raise ValueError("This test implementation supports exactly 3 nodes.")
+        # select number of parents for each node (2 or 3)
+        num_parents_list = [random.choice([2, 3]) for i in range(self.num_nodes)]
 
-        x0, x1, x2 = self.list_of_nodes
+        # select parents for each vertex based on the number of parents assigned to it
+        parents_list = [random.sample(self.list_of_nodes, k) for k in num_parents_list]
 
-        functions = [
-            (x0 & ~x1) | x2,     # f0
-            x0 & x2,             # f1 
-            (x1 | x2) & ~x0      # f2
-        ]
+        # generate expressions
+        functions = []
 
+        def maybe_negate(var):
+            """Randomly negate a variable with probability 0.5."""
+            return ~var if random.choice([True, False]) else var
+
+        for num_parents, parents in zip(num_parents_list, parents_list):
+            # possibly negate parents
+            parents = [maybe_negate(p) for p in parents]
+
+            if num_parents == 2:
+                symbol = random.choice(["&", "|"])
+                expression = [parents[0], symbol, parents[1]]
+
+                expr_str = " ".join(
+                    item.obj if hasattr(item, "obj") else str(item)
+                    for item in expression
+                )
+                try:
+                    expr = self.__bool_algebra.parse(expr_str)
+                    functions.append(expr)
+                except Exception as e:
+                    logger.error("Error parsing Boolean expression '%s': %s", expr_str, e)
+                    raise
+            else:
+                symbol1 = random.choice(["&", "|"])
+                symbol2 = random.choice(["&", "|"])
+                expression = ["(", parents[0], symbol1, parents[1], ")", symbol2, parents[2]]
+
+                expr_str = " ".join(
+                    item.obj if hasattr(item, "obj") else str(item)
+                    for item in expression
+                )
+                try:
+                    expr = self.__bool_algebra.parse(expr_str)
+                    functions.append(expr)
+                except Exception as e:
+                    logger.error("Error parsing Boolean expression '%s': %s", expr_str, e)
+                    raise
+
+        logger.info("Generated %d Boolean functions.", len(functions))
         return functions
 
-    def simulate_trajectories(self, start_state: tuple[int, ...], sampling_frequency: int, mode: str):
-      """
-      simulates trajectories of boolean network
-      """
-      pass
+
+    def simulate_trajectory(self):
+        """
+        Simulates trajectory of Boolean network.
+        """
+        logger.info("Simulating trajectory.")
+
+        trajectory = []
+        attractor_counter = 0
+        transient_counter = 0
+
+        # Random initial state
+        last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
+        trajectory.append(last_state)
+
+        n = (self.trajectory_length - 1) * self.sampling_frequency  # total steps
+
+        for i in range(n):
+            if self.mode == "synchronous":
+                next_state = self.next_synchronous(last_state)
+            else:  # asynchronous
+                coordinate = random.randint(0, self.num_nodes - 1)
+                next_state = self.next_asynchronous(last_state, coordinate)
+
+            last_state = next_state
+
+            if i % self.sampling_frequency == 0:
+                if next_state in self.attractors:
+                    attractor_counter += 1
+                else:
+                    transient_counter += 1
+                trajectory.append(next_state)
+
+        logger.info("Trajectory simulation completed. Trajectory length: %d.", len(trajectory))
+        return trajectory, attractor_counter, transient_counter
+
+
     
     def scoring_function(self, method: Literal['MDL', 'DBE']):
         """
@@ -202,7 +309,7 @@ class BN():
     def evaluate_accuracy(self):
         """
         Evaluate accuracy of the reconstructed network
-        Share parameters with the function above e.g. move methodto init?
+        Share parameters with the function above e.g. move method to init?
         """
 
     def draw_state_transition_system(self, highlight_attractors: bool = True) -> None:
@@ -216,10 +323,16 @@ class BN():
             Returns:
                 None
         """
-        # The color used for non-attractor states in the state transition system
-        NON_ATTRACTOR_STATE_COLOR = 'grey'
+        logger.info("Drawing state transition system.")
 
-        sts = self.generate_state_transition_system()
+        # The color used for non-attractor states in the state transition system
+        NON_ATTRACTOR_STATE_COLOR = 'lightgrey'
+
+        try:
+            sts = self.generate_state_transition_system()
+        except Exception:
+            logger.error("Failed to generate state transition system for drawing.")
+            raise
 
         if highlight_attractors:
             attractors = self.get_attractors()
@@ -238,19 +351,66 @@ class BN():
                 for state in attractor:
                     node_colors[sts_nodes.index(state)] = color
 
-        # Draw the graph. Different layouts can be used, for a full list see
-        # https://networkx.org/documentation/stable/reference/drawing.html#module-networkx.drawing.layout
-        # 
-        # A better drawing can be obtained with the PyGraphviz.AGraph class, but requires the installation of
-        # PyGraphviz (https://pygraphviz.github.io/)
-        nx.draw_networkx(sts,
-                         with_labels=True,
-                         pos=nx.spring_layout(sts),
-                         node_color = node_colors,
-                         font_size=8)
+        try:
+            plt.figure(figsize=(12, 12))
 
-        plt.show()
+            pos = nx.spring_layout(sts, seed=42, k=1.2)
+
+            nx.draw_networkx_nodes(
+                sts,
+                pos,
+                node_color=node_colors,
+                node_size=3500,      
+                edgecolors='black',
+                linewidths=1.2,
+                alpha=1.0
+            )
+
+            nx.draw_networkx_edges(
+                sts,
+                pos,
+                arrows=True,
+                arrowstyle='-|>',
+                arrowsize=20,
+                width=1.5,
+                alpha=0.7,
+                connectionstyle='arc3,rad=0.15',
+                min_source_margin=15,
+                min_target_margin=25
+            )
+
+            nx.draw_networkx_labels(
+                sts,
+                pos,
+                font_size=9,
+                font_weight='bold'
+            )
+
+            plt.axis('off')
+            plt.tight_layout()
+            plt.show()
+
+        except Exception as e:
+            logger.error("Error while drawing the state transition system: %s", e)
+            raise
+
 
 if __name__ == "__main__":
-    bn = BN(num_nodes=3, mode="synchronous")
+    algebra = BooleanAlgebra()
+    x1 = algebra.Symbol('x0')
+    x2 = algebra.Symbol('x1')
+    x3 = algebra.Symbol('x2')
+
+    # Define functions (the same as in exercise in lab 4)
+    f1 = x2
+    f2 = ~x2
+    f3 = ~x2 | x3
+
+    functions = [f1, f2, f3]
+
+    # Create BN with fixed functions
+    bn = BN(num_nodes=3, mode="asynchronous", sampling_frequency=3, trajectory_length=10, functions=functions)
+    print(bn.simulate_trajectory())
     bn.draw_state_transition_system()
+    bn.draw_structure_graph()
+
