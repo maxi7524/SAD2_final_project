@@ -2,17 +2,55 @@ import os
 import pandas as pd
 import bnfinder_wrapper as bnf  # Using the wrapper we created earlier
 
+# for inline arguments 
+import argparse
+
 # --- CONFIGURATION ---
-# Simulation data file path
-EXTERNAL_DATA_PATH = "simulation_output.csv" 
+# parse arguments
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="BNFinder pipeline for network inference"
+    )
 
-# Where to define the "Ground Truth" for evaluation (optional)
-# If this file doesn't exist, the script will skip evaluation.
-GROUND_TRUTH_PATH = "ground_truth_edges.csv"
+    parser.add_argument(
+        "--data",
+        required=True,
+        help="Path to simulation data CSV file"
+    )
 
-# Output filenames
-BNF_INPUT_FILE = "bnf_formatted_input.txt"
-OUTPUT_TEMPLATE = "inferred_network_{}.sif"
+    parser.add_argument(
+        "--ground-truth",
+        default=None,
+        help="Path to ground truth edges CSV file (optional)"
+    )
+
+    parser.add_argument(
+        "--bnf-input",
+        default="bnf_formatted_input.txt",
+        help="Output file for BNFinder formatted input"
+    )
+
+    parser.add_argument(
+        "--output-template",
+        default="inferred_network_{}.sif",
+        help="Template for output SIF files"
+    )
+
+    return parser.parse_args()
+
+# # archived: static arguments
+# ## Simulation data file path
+# EXTERNAL_DATA_PATH = "simulation_output.csv" 
+
+# ## Where to define the "Ground Truth" for evaluation (optional)
+# ## If this file doesn't exist, the script will skip evaluation.
+# GROUND_TRUTH_PATH = "ground_truth_edges.csv"
+
+# ## Output filenames
+# BNF_INPUT_FILE = "bnf_formatted_input.txt"
+# OUTPUT_TEMPLATE = "inferred_network_{}.sif"
+
+# --- functions ---
 
 def load_external_data(filepath):
     """
@@ -59,6 +97,20 @@ def evaluate_results(true_edges, inferred_edges):
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
+    # Get paths 
+    if parse_args:
+        args = parse_args()
+        ## Simulation data file path
+        EXTERNAL_DATA_PATH = args.data
+
+        ## Where to define the "Ground Truth" for evaluation (optional)
+        ## If this file doesn't exist, the script will skip evaluation.
+        GROUND_TRUTH_PATH = args.ground_truth
+
+        ## Output filenames
+        BNF_INPUT_FILE = args.bnf_input
+        OUTPUT_TEMPLATE = args.output_template
+    
     # 1. Load Data
     try:
         df = load_external_data(EXTERNAL_DATA_PATH)

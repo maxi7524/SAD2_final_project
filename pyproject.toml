@@ -11,6 +11,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14.1"
 dependencies = [
     "boolean-py>=5.0",
+    "ipykernel>=7.1.0",
     "matplotlib>=3.10.8",
     "networkx>=3.6.1",
     "numpy>=2.4.1",
