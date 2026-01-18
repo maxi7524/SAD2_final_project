@@ -62,7 +62,6 @@ if __name__ == "__main__":
     bn = BN(
         num_nodes=3,
         mode="asynchronous",
-        sampling_frequency=3,
         trajectory_length=10,
         functions=functions
     )

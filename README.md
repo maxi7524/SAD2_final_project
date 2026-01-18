@@ -47,19 +47,17 @@ The `BN` class handles:
 
 ---
 
-#### `simulate_trajectory()` – Notes for Future Development
+#### `simulate_trajectory()` 
 
-This method is central to dataset generation and is likely to be extended. Currently, it:
+The `simulate_trajectory` function in the `BN` class generates Boolean Network trajectories with the ability to control the proportion of **transient** and **attractor** states.
 
-* Starts from a **random initial state**.
-* Simulates updates for
-  `n = (trajectory_length - 1) * sampling_frequency` steps.
-* Samples every `sampling_frequency` steps.
-* Returns:
+#### Rules:
 
-  * the trajectory,
-  * number of sampled states in attractors,
-  * number of sampled transient states.
+1. Until the network enters an attractor, only transient states are recorded.
+2. The entrance step to the attractor is calculated based on `target_attractor_ratio` and the trajectory length, with an allowable deviation defined by `tolerance`.
+3. Once the attractor is reached, all subsequent states belong to it.
+4. If a valid state cannot be generated at a given step (after `max_iter` attempts), the trajectory is restarted.
+5. Sampling every `sampling_frequency` steps is preserved — no steps are skipped.
 
 ---
 
@@ -76,7 +74,6 @@ This method is central to dataset generation and is likely to be extended. Curre
 #### Attractors & STS
 
 * Attractors are computed from the full state transition system using `networkx.attracting_components`.
-* The STS is rebuilt when needed; caching could improve performance for larger networks.
 
 ---
 

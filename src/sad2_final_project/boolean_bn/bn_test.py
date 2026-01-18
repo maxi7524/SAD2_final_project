@@ -1,6 +1,6 @@
 import unittest
 from boolean import BooleanAlgebra
-from .bn import BN  # replace with the actual filename of your BN script
+from .bn import BN
 
 class TestBN(unittest.TestCase):
     def setUp(self):
@@ -17,7 +17,9 @@ class TestBN(unittest.TestCase):
         self.functions = [f1, f2, f3]
 
         # Create BN with fixed functions
-        self.bn = BN(num_nodes=3, mode="synchronous", sampling_frequency=1, trajectory_length=5, functions=self.functions)
+        self.bn = BN(num_nodes=3, mode="synchronous", trajectory_length=5, functions=self.functions)
+
+        self.bn2 = BN(num_nodes=3, mode="asynchronous", trajectory_length=5, functions=self.functions)
 
     def test_synchronous_update(self):
         # Initial state (x0, x1, x2) = (0, 0, 0)
@@ -44,6 +46,53 @@ class TestBN(unittest.TestCase):
         # Update coordinate 2 (f3=¬x2 ∨ x3)
         next_state = self.bn.next_asynchronous(state, 2)
         self.assertEqual(next_state, (0, 0, 1))
+
+    def test_simulate_trajectory_length(self):
+        trajectory, attractor_count, transient_count = self.bn.simulate_trajectory(
+            sampling_frequency=1,
+            target_attractor_ratio=0.5,
+            tolerance=0.2,
+            max_iter=50,
+            max_trajectory_restarts=100
+        )
+
+        # Check correct length
+        self.assertEqual(len(trajectory), self.bn.trajectory_length)
+
+        # Check counters sum to trajectory length
+        self.assertEqual(attractor_count + transient_count, self.bn.trajectory_length - 1)
+
+    def test_get_attractors_asynch_known_network(self):
+        attractors = self.bn2.get_attractors()
+        print(attractors)
+
+        expected_attractors = [{
+            (0, 0, 1),
+            (0, 1, 1),
+            (1, 1, 1),
+            (1, 0, 1)
+        }]
+
+        # There should be exactly one attractor
+        self.assertEqual(len(attractors), 1)
+
+        # That attractor should match exactly the expected set
+        self.assertEqual(attractors, expected_attractors)
+
+    def test_get_attractors_synch_known_network(self):
+        attractors = self.bn.get_attractors()
+        print(attractors)
+
+        expected_attractors = [{
+            (0, 1, 1),
+            (1, 0, 1)
+        }]
+
+        # There should be exactly one attractor
+        self.assertEqual(len(attractors), 1)
+
+        # That attractor should match exactly the expected set
+        self.assertEqual(attractors, expected_attractors)
 
 
 if __name__ == '__main__':

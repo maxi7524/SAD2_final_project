@@ -66,13 +66,12 @@ class BN():
         return bin_str
 
 
-    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], sampling_frequency: int, trajectory_length: int, functions: list = None):
+    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], trajectory_length: int, functions: list = None):
         """
         Class constructor
         """
         logger.info("Initializing Boolean Network with %d nodes in %s mode.", num_nodes, mode)
 
-        self.sampling_frequency = sampling_frequency # sampling frequency for generating trajectories
         self.mode = mode # mode in which trajectories will be generated
         self.trajectory_length = trajectory_length # trajectory length
         self.num_nodes = num_nodes # number of nodes in boolean network
@@ -202,6 +201,7 @@ class BN():
         except Exception as e:
             logger.error("Error while computing attractors: %s", e)
             raise
+        print(attractors)
 
         logger.info("Found %d attractors.", len(attractors))
         return attractors
@@ -264,44 +264,102 @@ class BN():
         return functions
 
 
-    def simulate_trajectory(self):
+    def simulate_trajectory(
+        self,
+        sampling_frequency: int = 3,
+        target_attractor_ratio: float = 0.4, # Approximate fraction of trajectory in attractor (0-1)
+        tolerance: float = 0.1, # Allowed deviation from the calculated entrance step (0-1)
+        max_iter: int = 50, # Maximum attempts to generate a valid state per step before restarting
+        max_trajectory_restarts: int = 100 # Maximum number of trajectory restarts allowed
+    ):
         """
-        Simulates trajectory of Boolean network.
+        Simulates a trajectory of the Boolean network with controlled transient/attractor ratio.
+
+        Rules:
+            1. Until the "entrance step" for the attractor, only transient states are allowed.
+            2. The entrance step is estimated from target_attractor_ratio and trajectory_length.
+            Tolerance allows slight deviation if exact entrance is impossible.
+            3. After the entrance step, only attractor states are allowed.
+            4. If a valid state cannot be generated in max_iter tries, the trajectory restarts.
         """
-        logger.info("Simulating trajectory.")
+        logger.info(
+            "Simulating trajectory with target attractor ratio %.2f, tolerance %.2f, max_iter %d",
+            target_attractor_ratio, tolerance, max_iter
+        )
 
         trajectory = []
-        attractor_counter = 0
-        transient_counter = 0
+        total_steps = self.trajectory_length * sampling_frequency
 
-        # Random initial state
-        last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
-        trajectory.append(last_state)
+        # Determine approximate step to enter the attractor
+        entrance_step = int((1 - target_attractor_ratio) * self.trajectory_length * sampling_frequency)
+        min_step = max(0, int(entrance_step * (1 - tolerance)))
+        max_step = min(total_steps, int(entrance_step * (1 + tolerance)))
 
-        n = (self.trajectory_length - 1) * self.sampling_frequency  # total steps
+        trajectory_restarts = 0
 
-        for i in range(n):
-            if self.mode == "synchronous":
-                next_state = self.next_synchronous(last_state)
-            else:  # asynchronous
-                coordinate = random.randint(0, self.num_nodes - 1)
-                next_state = self.next_asynchronous(last_state, coordinate)
+        while trajectory_restarts <= max_trajectory_restarts:
+            trajectory.clear()
+            attractor_counter = 0
+            transient_counter = 0
 
-            last_state = next_state
+            # Random initial state
+            last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
+            trajectory.append(last_state)
 
-            if i % self.sampling_frequency == 0:
-                # TODO sprawdzić czy to działa, bo struktura atraktorów to" `list[set[tuple[int]]]`, zatem z tego co rozumiem, będzie to: `lista zbiorów, których elementami są wszystkie elementu jednego atraktora` czyli trzeba by sprawdzić czy next_state jest w jednym ze zbiorów self.attractors 
-                if next_state in self.attractors:
-                    attractor_counter += 1
+            for step in range(1, total_steps):
+                for attempt in range(max_iter):
+                    # Generate next state
+                    if self.mode == "synchronous":
+                        next_state = self.next_synchronous(last_state)
+                    else:
+                        coordinate = random.randint(0, self.num_nodes - 1)
+                        next_state = self.next_asynchronous(last_state, coordinate)
+
+                    # Determine if next_state is an attractor
+                    is_attractor = any(next_state in attr for attr in self.attractors)
+
+                    # Decide what type of state is allowed at this step
+                    if step < min_step and is_attractor:
+                        continue  # transient required
+                    if step > max_step and not is_attractor:
+                        continue  # attractor required
+
+                    # Accept state
+                    last_state = next_state
+
+                    if is_attractor:
+                        attractor_counter += 1
+                    else:
+                        transient_counter += 1
+
+                    # Only sample every `sampling_frequency` steps
+                    if step % sampling_frequency == 0:
+                        trajectory.append(next_state)
+                        if len(trajectory) == self.trajectory_length:
+                            logger.info(
+                                "Trajectory completed. Length: %d, Attractors: %d, Transients: %d",
+                                len(trajectory), attractor_counter, transient_counter
+                            )
+                            return trajectory, attractor_counter, transient_counter
+
+                    break  # exit max_iter loop
                 else:
-                    transient_counter += 1
-                trajectory.append(next_state)
+                    # max_iter exceeded -> restart trajectory
+                    trajectory_restarts += 1
+                    logger.warning(
+                        "Max attempts exceeded at step %d, restarting trajectory (%d/%d)",
+                        step, trajectory_restarts, max_trajectory_restarts
+                    )
+                    break  # restart outer while loop
 
-        logger.info("Trajectory simulation completed. Trajectory length: %d.", len(trajectory))
-        return trajectory, attractor_counter, transient_counter
+            trajectory_restarts += 1  # if we exited loop without reaching full length
+
+        raise RuntimeError(
+            f"Failed to generate trajectory after {max_trajectory_restarts} restarts."
+        )
 
 
-    
+
     def scoring_function(self, method: Literal['MDL', 'DBE']):
         """
         scoring function for graphs
@@ -410,8 +468,8 @@ if __name__ == "__main__":
     functions = [f1, f2, f3]
 
     # Create BN with fixed functions
-    bn = BN(num_nodes=3, mode="asynchronous", sampling_frequency=3, trajectory_length=10, functions=functions)
-    print(bn.simulate_trajectory())
+    bn = BN(num_nodes=3, mode="asynchronous", trajectory_length=50, functions=functions)
+    #print(bn.simulate_trajectory())
     bn.draw_state_transition_system()
     bn.draw_structure_graph()
 
