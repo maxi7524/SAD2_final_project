@@ -5,6 +5,7 @@ import matplotlib.colors as mcolors
 import random
 from typing import Literal
 import logging
+import pandas as pd
 
 # --- Logger configuration ---
 logging.basicConfig(
@@ -372,7 +373,41 @@ class BN():
     #     Share parameters with the function above e.g. move method to init?
     #     """
 
-    # def 
+    def save_ground_truth(self, filepath: str = "ground_truth_edges.csv", with_header: bool = False) -> None:
+        """
+        Saves the ground truth edges (Parent, Child) to a CSV file based on the
+        network's Boolean functions.
+
+        Args:
+            filepath (str): Destination path for the CSV file.
+        """
+        logger.info("Saving ground truth edges to: %s", filepath)
+
+        edges = []
+
+        for i, func in enumerate(self.functions):
+            child_name = self.node_names[i]
+            parents = []
+            if hasattr(func, 'get_symbols'):
+                parents = func.get_symbols()
+            elif func in [self.__bool_algebra.TRUE, self.__bool_algebra.FALSE]:
+                parents = []
+
+            for parent_symbol in parents:
+                parent_name = str(parent_symbol)
+                edges.append((parent_name, child_name))
+
+        try:
+            df = pd.DataFrame(edges, columns=["Parent", "Child"])
+            if with_header:
+                df.to_csv(filepath, index=False)
+            else:
+                df.to_csv(filepath, index=False, header=False)
+
+            logger.info("Successfully saved %d ground truth edges.", len(edges))
+        except Exception as e:
+            logger.error("Error saving ground truth to CSV: %s", e)
+            raise
 
     def draw_state_transition_system(self, highlight_attractors: bool = True) -> None:
         """
@@ -472,7 +507,6 @@ if __name__ == "__main__":
 
     # Create BN with fixed functions
     bn = BN(num_nodes=3, mode="asynchronous", trajectory_length=50, functions=functions)
-    #print(bn.simulate_trajectory())
+    print(bn.functions)
     bn.draw_state_transition_system()
-    bn.draw_structure_graph()
 
