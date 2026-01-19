@@ -111,23 +111,63 @@ def run_bnfinder(
             ### Parse output
             inferred_edges = bnf.parse_sif_results(output_sif)
             print(f"[{score}] Inferred {len(inferred_edges)} edges.")
+            #TODO - problem, część plików jest nie obsługiwana 
             
+
             ### Metrics
+            #### case 0 - no edges:
+            if len(inferred_edges) == 0:
+                print(f"[{score}] Empty graph — returning zero metrics")
+
+                row = {
+                    "dataset": dataset_name,
+                    "score": score,
+                    "TP": 0,
+                    "FP": 0,
+                    "FN": 0,
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "sensitivity": 0.0,
+                    "AHD": 0,
+                    "log_likelihood": 0.0,
+                    "BIC": 0.0,
+                    "MDL": 0.0,
+                    "n_parameters": 0,
+                }
+                rows.append(row)
+                continue
+            #### case 1 - edges
             if true_edges is not None:
                 print("   (Ground truth file found, evaluating metrics)")
                 #### Obtain metrics
                 metrics = _evaluate_results_metrics(true_edges, inferred_edges)
-                #### TODO CHECK: 
+                #### obtain cost function: 
                 cost_functions = score_dag_from_sif(dataset_df=df, sif_file_path=output_sif)
+                #### Sanity check
+                assert isinstance(metrics, dict)
+                assert isinstance(cost_functions, dict)
                 #### Format metrics
                 row = {
+                    ##### TODO - check i f overwriting work properly 
+                    ##### groups
                     "dataset": dataset_name,
                     "score": score,
-                    **metrics,
-                    **cost_functions
-                    #TODO **score_values - tutaj powinny się znaleźć te score functions jeszcze
+                    ##### metrics
+                    "TP": metrics.get("TP"),
+                    "FP": metrics.get("FP"),
+                    "FN": metrics.get("FN"),
+                    "precision": metrics.get("precision"),
+                    "recall": metrics.get("recall"),
+                    "sensitivity": metrics.get("sensitivity"),
+                    "AHD": metrics.get("AHD"),
+                    ##### cost functions
+                    "log_likelihood": cost_functions.get("log_likelihood"),
+                    "BIC": cost_functions.get("bic"),
+                    "MDL": cost_functions.get("mdl"),
+                    "n_parameters": cost_functions.get("n_parameters"),
                 }
                 rows.append(row)
+            #### case 3: no file
             else:
                 print("   (No ground truth file found, skipping evaluation)")
 
@@ -138,7 +178,7 @@ def run_bnfinder(
     if rows:
         df_out = pd.DataFrame(rows)
         if os.path.exists(metrics_file):
-            df_out.to_csv(metrics_file, mode="a", header=True, index=False)
+            df_out.to_csv(metrics_file, mode="a", header=False, index=False)
         else:
             df_out.to_csv(metrics_file, index=False)
 
