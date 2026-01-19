@@ -69,7 +69,7 @@ def _evaluate_results(true_edges, inferred_edges):
 def run_bnfinder(
     dataset_path: Path | str, # dataset path for learning 
     ground_truth_path: Path | str | None = None, # ground truth for metrics
-    score_functions: List[str] = ["MDL", "BDE"],
+    score_functions: list[str] = ["MDL", "BDE"],
     bnf_file_path: Path | str = f"model_1_bnf_formatted.txt", # path for bnf_format
     scores_file: Path | str = "model_1",  #TODO to jest folder do metryk, ale je trzeba jakoś przechwycić 
     metrics_file: Path | str = f'model_1_bnf_metric.csv' #TODO najlepiej ten sam co output 
