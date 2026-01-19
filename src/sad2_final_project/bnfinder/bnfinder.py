@@ -1,0 +1,135 @@
+import os
+import pandas as pd
+import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
+from pathlib import Path
+
+#TODO - check if necessary 
+def _load_external_data(filepath):
+    """
+    Loads data from a CSV file.
+    Assumes rows = time steps, columns = gene names.
+    """
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"External data file not found: {filepath}")
+    
+    print(f"-> Loading external data from: {filepath}")
+    df = pd.read_csv(filepath)
+    print(f"   Loaded dataset with shape: {df.shape}")
+    return df
+
+def _load_ground_truth(filepath):
+    """
+    Loads ground truth edges from a CSV for evaluation.
+    Expected format: Parent,Child
+    """
+    if not os.path.exists(filepath):
+        return None
+    
+    print(f"-> Loading ground truth from: {filepath}")
+    edges = set()
+    df = pd.read_csv(filepath)
+    for _, row in df.iterrows():
+        edges.add((str(row[0]), str(row[1]))) # Parent, Child
+    return edges
+
+def _evaluate_results(true_edges, inferred_edges):
+    """Calculates Precision/Recall if ground truth is available."""
+    true_set = set(true_edges)
+    inferred_set = set(inferred_edges)
+    
+    tp = len(true_set.intersection(inferred_set))
+    fp = len(inferred_set - true_set)
+    # tn to jest dopełnienie nie wpliczonych krawędzi_
+    # n_nodes = trzeba jakoś ze struktury true_edges
+    # total_possible = n_nodes * (n_nodes - 1)
+    # tn = total_possible - tp - fp - fn
+    fn = len(true_set - inferred_set)
+
+    
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    ahd = fp + fn
+
+    # MAX: I changed return value so i can generate csv files 
+    return {
+        "TP": tp,
+        # "TN": tn,
+        "FP": fp,
+        "FN": fn,
+        "precision": precision,
+        "recall": recall,
+        "sensitivity": sensitivity,
+        "AHD": ahd
+    }
+
+
+# TODO CHECK 
+# TODO - przepisany main z oryginalne task3
+def run_bnfinder(
+    dataset_path: Path | str, # dataset path for learning 
+    ground_truth_path: Path | str | None = None, # ground truth for metrics
+    score_functions: List[str] = ["MDL", "BDE"],
+    bnf_file_path: Path | str = f"model_1_bnf_formatted.txt", # path for bnf_format
+    scores_file: Path | str = "model_1",  #TODO to jest folder do metryk, ale je trzeba jakoś przechwycić 
+    metrics_file: Path | str = f'model_1_bnf_metric.csv' #TODO najlepiej ten sam co output 
+):
+    # Paths managements
+    dataset_path = Path(dataset_path)
+    dataset_name = dataset_path.name
+    # Data management
+    ## 1. Load Data
+    try:
+        df = _load_external_data(dataset_path)
+    except FileNotFoundError as e:
+        print(e)
+        exit(1)
+
+    ## 2. Convert to BNFinder Format
+    ### This uses the function from 'bnfinder_wrapper.py' to handle the '#default 0 1' header
+    bnf.write_bnf_input(df, bnf_file_path)
+
+    ## 3. Load Ground Truth (if available)
+    true_edges = _load_ground_truth(ground_truth_path)
+
+    # Inference
+    ## 4. Run Inference on given score functions (default = MDL & BDe)
+    print("\n=== STARTING INFERENCE ===")
+    rows = []
+    for score in score_functions:
+        output_sif = Path(scores_file) / f'_{score}.sif'  #
+        
+        try:
+            ### Run wrapper
+            bnf.run_bnfinder(bnf_file_path, output_sif, score=score)
+            
+            ### Parse output
+            inferred_edges = bnf.parse_sif_results(output_sif)
+            print(f"[{score}] Inferred {len(inferred_edges)} edges.")
+            
+            ### Metrics
+            if true_edges is not None:
+                #### Obtain metrics
+                metrics = _evaluate_results(true_edges, inferred_edges)
+                #### Format metrics
+                row = {
+                    "dataset": dataset_name,
+                    "score": score,
+                    **metrics,
+                    #TODO **score_values - tutaj powinny się znaleźć te score functions jeszcze
+                }
+                rows.append(row)
+            else:
+                print("   (No ground truth file found, skipping evaluation)")
+
+        except Exception as e:
+            print(f"[{score}] Failed: {e}")
+
+    ## Append values to csv
+    df_out = pd.DataFrame(rows)
+    if os.path.exists(metrics_file):
+        df_out.to_csv(metrics_file, mode="a", header=True, index=False)
+    else:
+        df_out.to_csv(metrics_file, index=False)
+
+    print("\n=== DONE ===")
