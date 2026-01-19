@@ -71,12 +71,12 @@ def run_bnfinder(
     ground_truth_path: Path | str | None = None, # ground truth for metrics
     score_functions: list[str] = ["MDL", "BDE"],
     bnf_file_path: Path | str = f"model_1_bnf_formatted.txt", # path for bnf_format
-    scores_file: Path | str = "model_1",  #TODO to jest folder do metryk, ale je trzeba jakoś przechwycić 
+    trained_model_name: Path | str = "model_1",  #TODO to jest folder do metryk, ale je trzeba jakoś przechwycić 
     metrics_file: Path | str = f'model_1_bnf_metric.csv' #TODO najlepiej ten sam co output 
 ):
     # Paths managements
     dataset_path = Path(dataset_path)
-    dataset_name = dataset_path.name
+    dataset_name = dataset_path.stem
     # Data management
     ## 1. Load Data
     try:
@@ -97,7 +97,7 @@ def run_bnfinder(
     print("\n=== STARTING INFERENCE ===")
     rows = []
     for score in score_functions:
-        output_sif = Path(scores_file) / f'_{score}.sif'  #
+        output_sif = Path(str(trained_model_name) + f'_{score}.sif')  #
         
         try:
             ### Run wrapper
@@ -126,10 +126,11 @@ def run_bnfinder(
             print(f"[{score}] Failed: {e}")
 
     ## Append values to csv
-    df_out = pd.DataFrame(rows)
-    if os.path.exists(metrics_file):
-        df_out.to_csv(metrics_file, mode="a", header=True, index=False)
-    else:
-        df_out.to_csv(metrics_file, index=False)
+    if rows:
+        df_out = pd.DataFrame(rows)
+        if os.path.exists(metrics_file):
+            df_out.to_csv(metrics_file, mode="a", header=True, index=False)
+        else:
+            df_out.to_csv(metrics_file, index=False)
 
     print("\n=== DONE ===")
