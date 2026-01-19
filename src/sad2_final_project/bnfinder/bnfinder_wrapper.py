@@ -3,6 +3,7 @@ import os
 import shutil
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 def get_bnfinder_path():
     """
@@ -89,14 +90,22 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
         # Check=True raises an error if the return code is non-zero
         # We capture stdout/stderr to keep the main terminal clean, 
         # but you can print them for debugging if needed.
-        result = subprocess.run(
-            cmd, 
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
+        
+        #TODO add proper path 
+        log_path = Path(str(output_sif.parent) + '/' + output_sif.stem + f'_log.txt')
+        # add proper path 
+        with open(log_path, "w") as log_f:
+            result = subprocess.run(
+                cmd, 
+                check=True,
+                stdout=log_f,
+                stderr=subprocess.STDOUT,
+                text=True
+            )
         print(f"   Success! Output saved to {output_sif}")
+        #TODO - funkcja do odczytu:
+        # musimy przechwycić wynik, i jakoś go zapisać w innym pliku, jako score 
+
         
     except subprocess.CalledProcessError as e:
         print("   BNFinder execution failed!")

@@ -32,7 +32,7 @@ def _load_ground_truth(filepath):
         edges.add((str(row[0]), str(row[1]))) # Parent, Child
     return edges
 
-def _evaluate_results(true_edges, inferred_edges):
+def _evaluate_results_metrics(true_edges, inferred_edges):
     """Calculates Precision/Recall if ground truth is available."""
     true_set = set(true_edges)
     inferred_set = set(inferred_edges)
@@ -62,6 +62,10 @@ def _evaluate_results(true_edges, inferred_edges):
         "sensitivity": sensitivity,
         "AHD": ahd
     }
+
+# TODO, we can create version with edges ???
+def _evalute_results_scores():
+    pass
 
 
 # TODO CHECK 
@@ -110,7 +114,7 @@ def run_bnfinder(
             ### Metrics
             if true_edges is not None:
                 #### Obtain metrics
-                metrics = _evaluate_results(true_edges, inferred_edges)
+                metrics = _evaluate_results_metrics(true_edges, inferred_edges)
                 #### Format metrics
                 row = {
                     "dataset": dataset_name,
