@@ -1,7 +1,8 @@
 import os
 import pandas as pd
-import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
 from pathlib import Path
+import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
+from sad2_final_project.bnfinder.score_functions import score_dag_from_sif
 
 #TODO - check if necessary 
 def _load_external_data(filepath):
@@ -63,9 +64,9 @@ def _evaluate_results_metrics(true_edges, inferred_edges):
         "AHD": ahd
     }
 
-# TODO, we can create version with edges ???
-def _evalute_results_scores():
-    pass
+# # TODO, zastąpiona przez 
+# def _evalute_score_values():
+#     pass
 
 
 # TODO CHECK 
@@ -113,13 +114,17 @@ def run_bnfinder(
             
             ### Metrics
             if true_edges is not None:
+                print("   (Ground truth file found, evaluating metrics)")
                 #### Obtain metrics
                 metrics = _evaluate_results_metrics(true_edges, inferred_edges)
+                #### TODO CHECK: 
+                cost_functions = score_dag_from_sif(dataset_df=df, sif_file_path=output_sif)
                 #### Format metrics
                 row = {
                     "dataset": dataset_name,
                     "score": score,
                     **metrics,
+                    **cost_functions
                     #TODO **score_values - tutaj powinny się znaleźć te score functions jeszcze
                 }
                 rows.append(row)
