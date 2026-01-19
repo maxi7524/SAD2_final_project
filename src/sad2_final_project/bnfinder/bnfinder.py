@@ -162,9 +162,9 @@ def run_bnfinder(
                     "AHD": metrics.get("AHD"),
                     ##### cost functions
                     "log_likelihood": cost_functions.get("log_likelihood"),
-                    "BIC": cost_functions.get("bic"),
-                    "MDL": cost_functions.get("mdl"),
-                    "n_parameters": cost_functions.get("n_parameters"),
+                    "MDL": cost_functions.get("MDL"),
+                    "BDe": cost_functions.get("BDe"),
+                    # "n_parameters": cost_functions.get("n_parameters"),
                 }
                 rows.append(row)
             #### case 3: no file

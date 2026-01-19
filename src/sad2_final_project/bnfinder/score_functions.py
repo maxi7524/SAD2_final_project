@@ -1,136 +1,209 @@
-import itertools
 import numpy as np
 import pandas as pd
 from collections import defaultdict
 from typing import Dict, List
+from scipy.special import gammaln
+import itertools
+from .bnfinder_wrapper import load_structure_from_sif
 
-# ------------------------
-# Load files
-# ------------------------
+# --------------------------------------------------
+# Helpers
+# --------------------------------------------------
 
-
-def load_structure_from_sif(sif_path: str) -> Dict[str, List[str]]:
-    """
-    Reads a .sif file and returns parent sets.
-
-    Returns:
-        parents[node] = [parent1, parent2, ...]
-    """
-    parents = defaultdict(list)
-
-    with open(sif_path, "r") as f:
-        for line in f:
-            parts = line.strip().split()
-            if len(parts) >= 3:
-                parent, _, child = parts[:3]
-                parents[child].append(parent)
-
-    return dict(parents)
-
-
-def _parent_configurations(df: pd.DataFrame, parents: List[str]):
-    """
-    Returns all possible parent value configurations.
-    """
+def parent_config_count(df: pd.DataFrame, parents: List[str]) -> int:
     if not parents:
-        return [()]
-
-    parent_values = [df[p].unique() for p in parents]
-    return list(itertools.product(*parent_values))
+        return 1
+    return int(np.prod([df[p].nunique() for p in parents]))
 
 
-# ------------------------
-# Values calculation
-# ------------------------
-def _count_parent_config(df: pd.DataFrame, parents: List[str], config):
+def node_cardinality(df: pd.DataFrame, node: str) -> int:
+    return df[node].nunique()
+
+
+# --------------------------------------------------
+# Log-likelihood (MLE)
+# --------------------------------------------------
+
+def local_log_likelihood(
+    df: pd.DataFrame,
+    node: str,
+    parents: List[str]
+) -> float:
     """
-    Counts N_ij = number of rows matching parent configuration.
+    Local multinomial log-likelihood (MLE).
     """
-    if not parents:
-        return len(df)
+    if parents:
+        counts = (
+            df.groupby(parents + [node])
+              .size()
+              .rename("Nijk")
+              .reset_index()
+        )
+        Nij = (
+            counts.groupby(parents)["Nijk"]
+            .sum()
+            .rename("Nij")
+            .reset_index()
+        )
+        counts = counts.merge(Nij, on=parents)
+    else:
+        counts = (
+            df.groupby([node])
+              .size()
+              .rename("Nijk")
+              .reset_index()
+        )
+        Nij = counts["Nijk"].sum()
+        counts["Nij"] = Nij
 
-    mask = np.ones(len(df), dtype=bool)
-    for p, v in zip(parents, config):
-        mask &= (df[p] == v)
+    return float((counts["Nijk"] * np.log(counts["Nijk"] / counts["Nij"])).sum())
 
-    return mask.sum(), mask
 
-def _count_node_given_parents(df, node, mask):
+# --------------------------------------------------
+# MDL (≡ BIC)
+# --------------------------------------------------
+
+def local_mdl(
+    df: pd.DataFrame,
+    node: str,
+    parents: List[str],
+    N: int
+) -> float:
     """
-    Returns dict: value -> N_ijk
+    Local MDL contribution.
     """
-    counts = {}
-    for val in df[node].unique():
-        counts[val] = ((df[node] == val) & mask).sum()
-    return counts
+    ll = local_log_likelihood(df, node, parents)
+
+    r_i = node_cardinality(df, node)
+    q_i = parent_config_count(df, parents)
+    k_i = (r_i - 1) * q_i
+
+    return -ll + 0.5 * k_i * np.log(N)
 
 
-# ------------------------
-# Score functions calculation
-# ------------------------
+# --------------------------------------------------
+# BDe / BDeu
+# --------------------------------------------------
 
-def _local_scores(df: pd.DataFrame, node: str, parents: List[str]):
+def local_bde(
+    df: pd.DataFrame,
+    node: str,
+    parents: List[str],
+    ess: float = 1.0
+) -> float:
     """
-    Computes:
-        - local log-likelihood
-        - number of parameters
+    Local BDe (BDeu) score.
     """
-    ll = 0.0
-    n_params = 0
-    node_values = df[node].unique()
+    r_i = node_cardinality(df, node)
+    q_i = parent_config_count(df, parents)
 
-    for config in _parent_configurations(df, parents):
-        Nij, mask = _count_parent_config(df, parents, config)
-        if Nij == 0:
-            continue
+    alpha_ijk = ess / (q_i * r_i)
+    alpha_ij = ess / q_i
 
-        counts = _count_node_given_parents(df, node, mask)
+    if parents:
+        counts = (
+            df.groupby(parents + [node])
+              .size()
+              .rename("Nijk")
+              .reset_index()
+        )
 
-        for val, Nijk in counts.items():
-            if Nijk > 0:
-                ll += Nijk * np.log(Nijk / Nij)
+        Nij = (
+            counts.groupby(parents)["Nijk"]
+            .sum()
+            .rename("Nij")
+            .reset_index()
+        )
 
-        # parameters per parent configuration
-        n_params += len(node_values) - 1
+        counts = counts.merge(Nij, on=parents)
 
-    return ll, n_params
+        score = 0.0
+        for _, group in counts.groupby(parents):
+            Nij_val = group["Nij"].iloc[0]
 
-def _compute_scores(df: pd.DataFrame, parents_map: Dict[str, List[str]]):
+            score += gammaln(alpha_ij) - gammaln(alpha_ij + Nij_val)
+            score += (
+                gammaln(alpha_ijk + group["Nijk"])
+                - gammaln(alpha_ijk)
+            ).sum()
+
+        return float(score)
+
+    else:
+        counts = (
+            df.groupby([node])
+              .size()
+              .rename("Nijk")
+              .reset_index()
+        )
+
+        Nij = counts["Nijk"].sum()
+
+        score = gammaln(alpha_ij) - gammaln(alpha_ij + Nij)
+        score += (
+            gammaln(alpha_ijk + counts["Nijk"])
+            - gammaln(alpha_ijk)
+        ).sum()
+
+        return float(score)
+
+
+# --------------------------------------------------
+# Global DAG scores
+# --------------------------------------------------
+
+def _compute_scores(
+    df: pd.DataFrame,
+    parents_map: Dict[str, List[str]],
+    ess: float = 1.0
+) -> Dict[str, float]:
     """
-    Computes LL, BIC, MDL for a fixed DAG.
+    Computes total LL, MDL and BDe for a fixed DAG.
     """
-    total_ll = 0.0
-    total_params = 0
     N = len(df)
+
+    total_ll = 0.0
+    total_mdl = 0.0
+    total_bde = 0.0
 
     for node in df.columns:
         parents = parents_map.get(node, [])
-        ll_i, p_i = _local_scores(df, node, parents)
-        total_ll += ll_i
-        total_params += p_i
 
-    bic = total_ll - 0.5 * total_params * np.log(N)
-    mdl = -total_ll + 0.5 * total_params * np.log(N)
+        total_ll += local_log_likelihood(df, node, parents)
+        total_mdl += local_mdl(df, node, parents, N)
+        total_bde += local_bde(df, node, parents, ess)
 
     return {
         "log_likelihood": total_ll,
-        "bic": bic,
-        "mdl": mdl,
-        "n_parameters": total_params
+        "MDL": total_mdl,
+        "BDe": total_bde
     }
 
 # ------------------------
 # Public functions calculation
 # ------------------------
 
-def score_dag_from_sif(dataset_df: pd.DataFrame, sif_file_path: str):
+def score_dag_from_sif(
+    dataset_df: pd.DataFrame,
+    sif_file_path: str,
+    ess: float = 1.0
+) -> Dict[str, float]:
     """
-    High-level function:
-    - 
-    - loads DAG from `sif_file_path` file path
-    - computes LL, BIC, MDL
+    High-level function (public API).
 
-    This is the ONLY function meant to be imported.
+    - loads DAG structure from a .sif file
+    - computes LL, MDL and BDe scores
+
+    Args:
+        dataset_df : pandas DataFrame with discrete variables
+        sif_file_path : path to .sif file
+        ess : equivalent sample size for BDe (default = 1.0)
+
+    Returns:
+        dict with keys:
+            - log_likelihood
+            - MDL
+            - BDe
     """
     parents_map = load_structure_from_sif(sif_file_path)
-    return _compute_scores(dataset_df, parents_map)
+    return _compute_scores(dataset_df, parents_map, ess)

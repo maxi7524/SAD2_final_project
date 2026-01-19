@@ -4,6 +4,8 @@ import shutil
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from collections import defaultdict
+
 
 def get_bnfinder_path():
     """
@@ -136,6 +138,24 @@ def parse_sif_results(sif_file):
                 child = parts[2]
                 edges.append((parent, child))
     return edges
+
+def load_structure_from_sif(sif_path: str) -> dict[str, list[str]]:
+    """
+    Reads a .sif file and returns parent sets.
+
+    Returns:
+        parents[node] = [parent1, parent2, ...]
+    """
+    parents = defaultdict(list)
+
+    with open(sif_path, "r") as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) >= 3:
+                parent, _, child = parts[:3]
+                parents[child].append(parent)
+
+    return dict(parents)
 
 # --- MAIN EXECUTION (Task 3 Logic) ---
 if __name__ == "__main__":
