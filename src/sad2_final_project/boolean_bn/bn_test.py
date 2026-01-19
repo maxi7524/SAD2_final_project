@@ -24,27 +24,27 @@ class TestBN(unittest.TestCase):
     def test_synchronous_update(self):
         # Initial state (x0, x1, x2) = (0, 0, 0)
         state = (0, 0, 0)
-        next_state = self.bn.next_synchronous(state)
+        next_state = self.bn._next_synchronous(state)
         # f1=x2=0, f2=¬x2=1, f3=¬x2∨x3=1
         self.assertEqual(next_state, (0, 1, 1))
 
         state = (1, 1, 0)
-        next_state = self.bn.next_synchronous(state)
+        next_state = self.bn._next_synchronous(state)
         # f1=x2=1, f2=¬x2=0, f3=¬x2∨x3=0
         self.assertEqual(next_state, (1, 0, 0))
 
     def test_asynchronous_update(self):
         state = (0, 0, 0)
         # Update coordinate 0 (f1=x2)
-        next_state = self.bn.next_asynchronous(state, 0)
+        next_state = self.bn._next_asynchronous(state, 0)
         self.assertEqual(next_state, (0, 0, 0))  # x2=0
 
         # Update coordinate 1 (f2=¬x2)
-        next_state = self.bn.next_asynchronous(state, 1)
+        next_state = self.bn._next_asynchronous(state, 1)
         self.assertEqual(next_state, (0, 1, 0))
 
         # Update coordinate 2 (f3=¬x2 ∨ x3)
-        next_state = self.bn.next_asynchronous(state, 2)
+        next_state = self.bn._next_asynchronous(state, 2)
         self.assertEqual(next_state, (0, 0, 1))
 
     def test_simulate_trajectory_length(self):

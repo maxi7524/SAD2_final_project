@@ -72,6 +72,8 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
     
     # Construct command: python2 path/to/bnf -e input -n output -s Score -v
     # Note: We use lowercase '-s' based on the installed version 2.1.1
+    # TODO remove suffix 
+    
     cmd = [
         "python2", 
         bnf_path,

@@ -66,7 +66,7 @@ class BN():
         return bin_str
 
 
-    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], trajectory_length: int, functions: list = None):
+    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], trajectory_length: int, functions: list = None, *, n_parents_per_node=[2,3]):
         """
         Class constructor
         """
@@ -89,29 +89,29 @@ class BN():
                 raise ValueError("Number of functions must match number of nodes.")
             self.functions = functions
         else:
-            self.functions = self.generate_random_functions()
+            self.functions = self.generate_random_functions(n_parents_per_node=n_parents_per_node)
 
         logger.info("Boolean Network initialized successfully.")
 
         # Compute attractors
         self.attractors = self.get_attractors()
 
-    def get_neighbor_states(self, state: tuple[int, ...]) -> set[tuple[int, ...]]:
+    def _get_neighbor_states(self, state: tuple[int, ...]) -> set[tuple[int, ...]]:
         """
         Computes the states reachable from the given state in one step of update.
         """
         if self.mode == "synchronous":
             # In synchronous mode, only one next state is possible
-            return {self.next_synchronous(state)}
+            return {self._next_synchronous(state)}
         else:
             # In asynchronous mode, each transition updates a single node
             reachable_states = [
-                self.next_asynchronous(state, i)
+                self._next_asynchronous(state, i)
                 for i in range(self.num_nodes)
             ]
             return set(reachable_states)
 
-    def generate_state_transition_system(self)-> nx.DiGraph:
+    def _generate_state_transition_system(self)-> nx.DiGraph:
         """
         Generates state transition system of the Boolean network. Works for both synchronous and asynchronous.
         """
@@ -126,14 +126,14 @@ class BN():
 
         # adding edges
         for node in G.nodes:
-            reachable_states = self.get_neighbor_states(node)
+            reachable_states = self._get_neighbor_states(node)
             for reachable in reachable_states:
                 G.add_edge(node, reachable)
 
         logger.info("State transition system generated with %d states and %d transitions.", G.number_of_nodes(), G.number_of_edges())
         return G
 
-    def next_synchronous(self, curr_state: tuple[int, ...]) -> tuple[int, ...]:
+    def _next_synchronous(self, curr_state: tuple[int, ...]) -> tuple[int, ...]:
         """
         Returns the next state under synchronous update.
         x(t+1) = (f1, f2,...,fn)
@@ -156,7 +156,7 @@ class BN():
 
         return tuple(new_state)
 
-    def next_asynchronous(self, curr_state: tuple[int, ...], coordinate) -> tuple[int, ...]:
+    def _next_asynchronous(self, curr_state: tuple[int, ...], coordinate) -> tuple[int, ...]:
         """
         Returns the next state under asynchronous update.
         if given coordinate to update xj, updates: x(t+1) = x(x1, x2,...fi,...fn)
@@ -192,7 +192,7 @@ class BN():
         """
         logger.info("Computing attractors.")
 
-        sts = self.generate_state_transition_system()
+        sts = self._generate_state_transition_system()
 
         attractors = []
         try:
@@ -206,7 +206,8 @@ class BN():
         logger.info("Found %d attractors.", len(attractors))
         return attractors
     
-    def generate_random_functions(self):
+    #TODO - check, function is modified (set parents number, )
+    def generate_random_functions(self, n_parents_per_node: list[int]=[2, 3]):
         """
         Function which chooses parents and generates random Boolean functions.
         Each variable may also be randomly negated (~).
@@ -214,7 +215,7 @@ class BN():
         logger.info("Generating random Boolean functions.")
 
         # select number of parents for each node (2 or 3)
-        num_parents_list = [random.choice([2, 3]) for i in range(self.num_nodes)]
+        num_parents_list = [random.choice(n_parents_per_node) for _ in range(self.num_nodes)]
 
         # select parents for each vertex based on the number of parents assigned to it
         parents_list = [random.sample(self.list_of_nodes, k) for k in num_parents_list]
@@ -310,10 +311,10 @@ class BN():
                 for attempt in range(max_iter):
                     # Generate next state
                     if self.mode == "synchronous":
-                        next_state = self.next_synchronous(last_state)
+                        next_state = self._next_synchronous(last_state)
                     else:
                         coordinate = random.randint(0, self.num_nodes - 1)
-                        next_state = self.next_asynchronous(last_state, coordinate)
+                        next_state = self._next_asynchronous(last_state, coordinate)
 
                     # Determine if next_state is an attractor
                     is_attractor = any(next_state in attr for attr in self.attractors)
@@ -359,17 +360,19 @@ class BN():
         )
 
 
-
-    def scoring_function(self, method: Literal['MDL', 'DBE']):
-        """
-        scoring function for graphs
-        """
+    # implemented in bnfinder
+    # def scoring_function(self, method: Literal['MDL', 'DBE']):
+    #     """
+    #     scoring function for graphs
+    #     """
     
-    def evaluate_accuracy(self):
-        """
-        Evaluate accuracy of the reconstructed network
-        Share parameters with the function above e.g. move method to init?
-        """
+    # def evaluate_accuracy(self):
+    #     """
+    #     Evaluate accuracy of the reconstructed network
+    #     Share parameters with the function above e.g. move method to init?
+    #     """
+
+    # def 
 
     def draw_state_transition_system(self, highlight_attractors: bool = True) -> None:
         """
@@ -388,7 +391,7 @@ class BN():
         NON_ATTRACTOR_STATE_COLOR = 'lightgrey'
 
         try:
-            sts = self.generate_state_transition_system()
+            sts = self._generate_state_transition_system()
         except Exception:
             logger.error("Failed to generate state transition system for drawing.")
             raise
