@@ -3,6 +3,7 @@ from boolean import BooleanAlgebra
 import random
 import logging
 from .bn import BN
+import csv
 
 # def save_trajectories_to_bnfinder_format(
 #         bn_instance,
@@ -45,25 +46,42 @@ from .bn import BN
 
 #     print("Done.")
 
-def save_trajectories_to_bnfinder_format(
+def save_trajectories_to_csv(
         bn_instance,
         num_trajectories,
-        output_file="trajectory.txt"
+        output_file="trajectory.csv",
+        *, 
+        sampling_frequency: int = 3,
+        target_attractor_ratio: float = 0.4, # Approximate fraction of trajectory in attractor (0-1)
+        tolerance: float = 0.1, # Allowed deviation from the calculated entrance step (0-1)
+        max_iter: int = 50, # Maximum attempts to generate a valid state per step before restarting
+        max_trajectory_restarts: int = 100 # Maximum number of trajectory restarts allowed
 ):
     rows = []
 
     for _ in range(num_trajectories):
-        trajectory, _, _ = bn_instance.simulate_trajectory()
+        trajectory, _, _ = bn_instance.simulate_trajectory(
+            sampling_frequency = 3,
+            target_attractor_ratio = 0.4, # Approximate fraction of trajectory in attractor (0-1)
+            tolerance = 0.1, # Allowed deviation from the calculated entrance step (0-1)
+            max_iter = 50, # Maximum attempts to generate a valid state per step before restarting
+            max_trajectory_restarts= 100 # Maximum number of trajectory restarts allowed
+        )
 
         for state in trajectory:
-            rows.append([str(val) for val in state])
+            rows.append(state)  # zostawiamy wartości jako int/bool
 
-    with open(output_file, "w") as f:
-        for row in rows:
-            f.write("\t".join(row) + "\n")
+    with open(output_file, "w", newline="") as f:
+        writer = csv.writer(f)
+
+        # nagłówki (G1, G2, G3, ...)
+        header = [f"G{i+1}" for i in range(len(rows[0]))]
+        writer.writerow(header)
+
+        # dane
+        writer.writerows(rows)
 
     print("Done.")
-
 
 
 
