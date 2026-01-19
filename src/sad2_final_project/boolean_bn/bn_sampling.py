@@ -2,7 +2,7 @@ import networkx as nx
 from boolean import BooleanAlgebra
 import random
 import logging
-from bn import BN
+from .bn import BN
 
 def save_trajectories_to_bnfinder_format(
         bn_instance,
@@ -66,5 +66,5 @@ if __name__ == "__main__":
         functions=functions
     )
 
-    # 3. Generate and Save
-    save_trajectories_to_bnfinder_format(bn, 10, "bnfinder_input.txt")
+    # # 3. Generate and Save
+    # save_trajectories_to_bnfinder_format(bn, 10, "bnfinder_input_test.txt")

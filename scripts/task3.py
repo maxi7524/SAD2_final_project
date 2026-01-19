@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-import bnfinder_wrapper as bnf  # Using the wrapper we created earlier
+import sad2_final_project.bnfinder.bnfinder_wrapper as bnf  # Using the wrapper we created earlier
 
 # for inline arguments 
 import argparse
