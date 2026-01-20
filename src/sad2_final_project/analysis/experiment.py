@@ -166,7 +166,7 @@ class BooleanNetworkExperiment:
     # =========================
     # PARALLEL EXECUTION
     # =========================
-    def run(
+    def run_experiment(
         self,
         *,
         n_jobs: int = 1,
