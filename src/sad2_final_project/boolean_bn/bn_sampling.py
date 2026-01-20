@@ -46,7 +46,7 @@ import csv
 
 #     print("Done.")
 
-def save_trajectories_to_csv(
+def simulate_trajectories_to_csv(
         bn_instance,
         num_trajectories,
         output_file="trajectory.csv",
@@ -61,11 +61,11 @@ def save_trajectories_to_csv(
 
     for _ in range(num_trajectories):
         trajectory, _, _ = bn_instance.simulate_trajectory(
-            sampling_frequency = 3,
-            target_attractor_ratio = 0.4, # Approximate fraction of trajectory in attractor (0-1)
-            tolerance = 0.1, # Allowed deviation from the calculated entrance step (0-1)
-            max_iter = 50, # Maximum attempts to generate a valid state per step before restarting
-            max_trajectory_restarts= 100 # Maximum number of trajectory restarts allowed
+            sampling_frequency = sampling_frequency,
+            target_attractor_ratio = target_attractor_ratio, # Approximate fraction of trajectory in attractor (0-1)
+            tolerance = tolerance, # Allowed deviation from the calculated entrance step (0-1)
+            max_iter = max_iter, # Maximum attempts to generate a valid state per step before restarting
+            max_trajectory_restarts= max_trajectory_restarts # Maximum number of trajectory restarts allowed
         )
 
         for state in trajectory:

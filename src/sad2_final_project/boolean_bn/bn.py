@@ -265,6 +265,76 @@ class BN():
         logger.info("Generated %d Boolean functions.", len(functions))
         return functions
 
+    ###### TODO START: modified generate_random_function (any number of )
+    def _build_random_boolean_expression(self, parents: list):
+        """
+        Builds a BooleanAlgebra expression from a list of parent symbols
+        using randomly chosen binary operators (&, |).
+
+        parents: list of BooleanAlgebra.Symbol (possibly negated)
+        """
+        assert len(parents) >= 1
+
+        # single parent → identity
+        if len(parents) == 1:
+            return parents[0]
+
+        expr = parents[0]
+
+        for next_parent in parents[1:]:
+            op = random.choice(["&", "|"])
+            expr_str = f"({expr}) {op} ({next_parent})"
+            try:
+                expr = self.__bool_algebra.parse(expr_str)
+            except Exception as e:
+                logger.error("Error parsing Boolean expression '%s': %s", expr_str, e)
+                raise
+
+        return expr
+
+
+    ###### END:  modified generate_random_function
+    def generate_random_functions(self, n_parents_per_node: list[int] = [2, 3]):
+        """
+        Chooses parents and generates random Boolean functions.
+        Supports arbitrary number of parents >= 1.
+        """
+        logger.info("Generating random Boolean functions.")
+
+        # choose number of parents per node
+        num_parents_list = [
+            random.choice(n_parents_per_node)
+            for _ in range(self.num_nodes)
+        ]
+
+        functions = []
+
+        def maybe_negate(var):
+            return ~var if random.choice([True, False]) else var
+
+        for num_parents in num_parents_list:
+
+            if num_parents < 1:
+                raise ValueError("Each node must have at least one parent.")
+
+            if num_parents > self.num_nodes:
+                raise ValueError(
+                    f"Cannot sample {num_parents} parents from {self.num_nodes} nodes."
+                )
+
+            # sample parents
+            parents = random.sample(self.list_of_nodes, num_parents)
+
+            # optional negation
+            parents = [maybe_negate(p) for p in parents]
+
+            # build expression
+            expr = self._build_random_boolean_expression(parents)
+            functions.append(expr)
+
+        logger.info("Generated %d Boolean functions.", len(functions))
+        return functions
+
 
     def simulate_trajectory(
         self,
@@ -272,7 +342,7 @@ class BN():
         target_attractor_ratio: float = 0.4, # Approximate fraction of trajectory in attractor (0-1)
         tolerance: float = 0.1, # Allowed deviation from the calculated entrance step (0-1)
         max_iter: int = 50, # Maximum attempts to generate a valid state per step before restarting
-        max_trajectory_restarts: int = 100 # Maximum number of trajectory restarts allowed
+        max_trajectory_restarts: int = 1000 # Maximum number of trajectory restarts allowed
     ):
         """
         Simulates a trajectory of the Boolean network with controlled transient/attractor ratio.

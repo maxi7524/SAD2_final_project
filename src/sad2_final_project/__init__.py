@@ -1,2 +1,2 @@
-from . import bnfinder, boolean_bn
+from . import bnfinder, boolean_bn, analysis
 
