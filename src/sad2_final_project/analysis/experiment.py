@@ -3,6 +3,7 @@ from ast import Dict
 from pathlib import Path
 from itertools import product
 import shutil
+from subprocess import ABOVE_NORMAL_PRIORITY_CLASS
 import pandas as pd
 import multiprocessing as mp
 from typing import Iterable, Literal, Optional
@@ -36,7 +37,10 @@ class BooleanNetworkExperiment:
         n_trajectories: Iterable[int],
         sampling_frequency: Iterable[int],
         score_functions: Iterable[Literal["MDL", "BDE"]],
-        # TODO - add metrics option 
+        # TODO - add metrics option - TO JOANNA: wstaw to do jeszcze jednej sekcji # analysis
+        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]],
+        # TODO - add score analysis_score_functions - and pass it only for printing score functions (this parameter is not being in cartesian coordinates)
+        analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 
         # BN-specific
         n_parents_per_node: Iterable[list[int]] = ([1, 2, 3],),
@@ -54,6 +58,9 @@ class BooleanNetworkExperiment:
 
 
     ):
+        # =========================
+        # paths assignments and folder creation
+        # =========================
         self.data_path = Path(data_path)
         self.experiment_name = experiment_name
 
@@ -100,6 +107,13 @@ class BooleanNetworkExperiment:
                 "rep_id",
             ],
         ) 
+
+        # =========================
+        # other parameters 
+        # =========================
+        # analysis attribute
+        self.analysis_metrics = analysis_metrics
+        self.analysis_score_functions = analysis_score_functions
         # simulating trajectory setting
         self.simulate_trajectories_to_csv_kwargs = simulate_trajectories_to_csv_kwargs
 
@@ -166,7 +180,7 @@ class BooleanNetworkExperiment:
         if path.exists() and path.is_dir():
             shutil.rmtree(path)
         else:
-            raise FileNotFoundError(f"Katalog nie istnieje: {path}")
+            pass
 
     # =========================
     # CORE EXECUTION LOGIC
@@ -213,12 +227,18 @@ class BooleanNetworkExperiment:
 
         # ---------- 4. inference ----------
         run_bnfinder(
+            ## file paths
             dataset_path=dataset_path,
             ground_truth_path=gt_path,
-            score_functions=[row["score_function"]],
-            bnf_file_path=bnf_dataset_path,
             trained_model_name=self.paths["results"] / cid,
+            bnf_file_path=bnf_dataset_path,
             metrics_file=metrics_path,
+            ## model parameters
+            score_functions=[row["score_function"]],
+            ## analysis settings
+            analysis_metrics = self.analysis_metrics,
+            analysis_score_functions= self.analysis_score_functions,
+
         )
 
         return True

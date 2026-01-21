@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 from pathlib import Path
+from typing import Iterable, Literal, Optional
 import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
 from sad2_final_project.bnfinder.score_functions import score_dag_from_sif
+from sad2_final_project.bnfinder.metrics import evaluate_results_metrics
 
-#TODO - check if necessary 
 def _load_external_data(filepath):
     """
     Loads data from a CSV file.
@@ -33,51 +34,18 @@ def _load_ground_truth(filepath):
         edges.add((str(row[0]), str(row[1]))) # Parent, Child
     return edges
 
-def _evaluate_results_metrics(true_edges, inferred_edges):
-    """Calculates Precision/Recall if ground truth is available."""
-    true_set = set(true_edges)
-    inferred_set = set(inferred_edges)
-    
-    tp = len(true_set.intersection(inferred_set))
-    fp = len(inferred_set - true_set)
-    # tn to jest dopełnienie nie wpliczonych krawędzi_
-    # n_nodes = trzeba jakoś ze struktury true_edges
-    # total_possible = n_nodes * (n_nodes - 1)
-    # tn = total_possible - tp - fp - fn
-    fn = len(true_set - inferred_set)
-
-    
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    ahd = fp + fn
-
-    # MAX: I changed return value so i can generate csv files 
-    return {
-        "TP": tp,
-        # "TN": tn,
-        "FP": fp,
-        "FN": fn,
-        "precision": precision,
-        "recall": recall,
-        "sensitivity": sensitivity,
-        "AHD": ahd
-    }
-
-# # TODO, zastąpiona przez 
-# def _evalute_score_values():
-#     pass
-
-
-# TODO CHECK 
-# TODO - przepisany main z oryginalne task3
 def run_bnfinder(
+    # paths
     dataset_path: Path | str, # dataset path for learning 
     ground_truth_path: Path | str | None = None, # ground truth for metrics
-    score_functions: list[str] = ["MDL", "BDE"],
+    trained_model_name: Path | str = "model_1", 
     bnf_file_path: Path | str = f"model_1_bnf_formatted.txt", # path for bnf_format
-    trained_model_name: Path | str = "model_1",  #TODO to jest folder do metryk, ale je trzeba jakoś przechwycić 
-    metrics_file: Path | str = f'model_1_bnf_metric.csv' #TODO najlepiej ten sam co output 
+    metrics_file: Path | str = f'model_1_bnf_metric.csv', 
+    # model parameters
+    score_functions: list[str] = ["MDL", "BDE"],
+    # analysis parameters
+    analysis_metrics: list[str] = ["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
+    analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 ):
     # Paths managements
     dataset_path = Path(dataset_path)
@@ -111,8 +79,6 @@ def run_bnfinder(
             ### Parse output
             inferred_edges = bnf.parse_sif_results(output_sif)
             print(f"[{score}] Inferred {len(inferred_edges)} edges.")
-            #TODO - problem, część plików jest nie obsługiwana 
-            
 
             ### Metrics
             #### case 0 - no edges:
@@ -122,17 +88,13 @@ def run_bnfinder(
                 row = {
                     "dataset": dataset_name,
                     "score": score,
-                    "TP": 0,
-                    "FP": 0,
-                    "FN": 0,
-                    "precision": 0.0,
-                    "recall": 0.0,
-                    "sensitivity": 0.0,
-                    "AHD": 0,
+                    ##### metrics
+                    **metrics,
+                    ##### cost functions
                     "log_likelihood": 0.0,
                     "BIC": 0.0,
                     "MDL": 0.0,
-                    "n_parameters": 0,
+                    # "n_parameters": 0,
                 }
                 rows.append(row)
                 continue
@@ -140,7 +102,7 @@ def run_bnfinder(
             if true_edges is not None:
                 print("   (Ground truth file found, evaluating metrics)")
                 #### Obtain metrics
-                metrics = _evaluate_results_metrics(true_edges, inferred_edges)
+                metrics = evaluate_results_metrics(true_edges, inferred_edges, metrics_list=analysis_metrics)
                 #### obtain cost function: 
                 cost_functions = score_dag_from_sif(dataset_df=df, sif_file_path=output_sif)
                 #### Sanity check
@@ -153,13 +115,7 @@ def run_bnfinder(
                     "dataset": dataset_name,
                     "score": score,
                     ##### metrics
-                    "TP": metrics.get("TP"),
-                    "FP": metrics.get("FP"),
-                    "FN": metrics.get("FN"),
-                    "precision": metrics.get("precision"),
-                    "recall": metrics.get("recall"),
-                    "sensitivity": metrics.get("sensitivity"),
-                    "AHD": metrics.get("AHD"),
+                    **metrics,
                     ##### cost functions
                     "log_likelihood": cost_functions.get("log_likelihood"),
                     "MDL": cost_functions.get("MDL"),
