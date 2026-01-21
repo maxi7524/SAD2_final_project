@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from collections import defaultdict
 from typing import Dict, List
 from scipy.special import gammaln
 import itertools
@@ -56,7 +55,7 @@ def local_log_likelihood(
         Nij = counts["Nijk"].sum()
         counts["Nij"] = Nij
 
-    return float((counts["Nijk"] * np.log(counts["Nijk"] / counts["Nij"])).sum())
+    return float((counts["Nijk"] * np.log2(counts["Nijk"] / counts["Nij"])).sum())
 
 
 # --------------------------------------------------
@@ -78,7 +77,7 @@ def local_mdl(
     q_i = parent_config_count(df, parents)
     k_i = (r_i - 1) * q_i
 
-    return -ll + 0.5 * k_i * np.log(N)
+    return -ll + 0.5 * k_i * np.log2(N)
 
 
 # --------------------------------------------------
@@ -169,9 +168,9 @@ def _compute_scores(
     for node in df.columns:
         parents = parents_map.get(node, [])
 
-        total_ll += local_log_likelihood(df, node, parents)
+        total_ll -= local_log_likelihood(df, node, parents)
         total_mdl += local_mdl(df, node, parents, N)
-        total_bde += local_bde(df, node, parents, ess)
+        total_bde -= local_bde(df, node, parents, ess)
 
     return {
         "log_likelihood": total_ll,
