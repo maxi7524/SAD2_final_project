@@ -4,15 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import random
 from typing import Literal
-import logging
 import pandas as pd
 
-# --- Logger configuration ---
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 
 class BN():
@@ -66,15 +59,13 @@ class BN():
         
         return bin_str
 
-
-    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], trajectory_length: int, functions: list = None, *, n_parents_per_node=[2,3]):
+    ###### już nie dajemy zgóry ustalonej długo sci trajectorii
+    def __init__(self, num_nodes: int, mode: Literal["synchronous", "asynchronous"], functions: list = None, *, n_parents_per_node=[2,3]):
         """
         Class constructor
         """
-        logger.info("Initializing Boolean Network with %d nodes in %s mode.", num_nodes, mode)
 
         self.mode = mode # mode in which trajectories will be generated
-        self.trajectory_length = trajectory_length # trajectory length
         self.num_nodes = num_nodes # number of nodes in boolean network
         self.node_names = [f"x{i}" for i in range(num_nodes)]
         self.TF = {True: 1, False: 0} # helper dictionary for conversion True and False into 1 or 0
@@ -91,8 +82,6 @@ class BN():
             self.functions = functions
         else:
             self.functions = self.generate_random_functions(n_parents_per_node=n_parents_per_node)
-
-        logger.info("Boolean Network initialized successfully.")
 
         # Compute attractors
         self.attractors = self.get_attractors()
@@ -116,7 +105,6 @@ class BN():
         """
         Generates state transition system of the Boolean network. Works for both synchronous and asynchronous.
         """
-        logger.info("Generating state transition system (STS).")
 
         G = nx.DiGraph()
 
@@ -131,7 +119,6 @@ class BN():
             for reachable in reachable_states:
                 G.add_edge(node, reachable)
 
-        logger.info("State transition system generated with %d states and %d transitions.", G.number_of_nodes(), G.number_of_edges())
         return G
 
     def _next_synchronous(self, curr_state: tuple[int, ...]) -> tuple[int, ...]:
@@ -152,7 +139,6 @@ class BN():
         try:
             new_state = [self.TF[func.subs(vals).simplify()] for func in self.functions]
         except Exception as e:
-            logger.error("Error during synchronous state update for state %s: %s", curr_state, e)
             raise
 
         return tuple(new_state)
@@ -179,7 +165,6 @@ class BN():
         try:
             curr_state[i] = self.TF[self.functions[i].subs(vals).simplify()]
         except Exception as e:
-            logger.error("Error during asynchronous state update for state %s at coordinate %s: %s", curr_state, i, e)
             raise
         
         return tuple(curr_state)
@@ -191,8 +176,6 @@ class BN():
             Returns:
                 list[set[tuple[int]]]: A list of asynchronous attractors. Each attractor is a set of states.
         """
-        logger.info("Computing attractors.")
-
         sts = self._generate_state_transition_system()
 
         attractors = []
@@ -200,11 +183,8 @@ class BN():
             for attractor in nx.attracting_components(sts):
                 attractors.append(attractor)
         except Exception as e:
-            logger.error("Error while computing attractors: %s", e)
             raise
-        print(attractors)
 
-        logger.info("Found %d attractors.", len(attractors))
         return attractors
     
     ##### TODO - OBSOLETE
@@ -287,7 +267,6 @@ class BN():
             try:
                 expr = self.__bool_algebra.parse(expr_str)
             except Exception as e:
-                logger.error("Error parsing Boolean expression '%s': %s", expr_str, e)
                 raise
 
         return expr
@@ -299,7 +278,6 @@ class BN():
         Chooses parents and generates random Boolean functions.
         Supports arbitrary number of parents >= 1.
         """
-        logger.info("Generating random Boolean functions.")
 
         # choose number of parents per node
         num_parents_list = [
@@ -332,7 +310,6 @@ class BN():
             expr = self._build_random_boolean_expression(parents)
             functions.append(expr)
 
-        logger.info("Generated %d Boolean functions.", len(functions))
         return functions
 
     # ARCHIVE
@@ -442,91 +419,139 @@ class BN():
 
     ########### MAX: SIMPLE VERSION 
 
+#     def simulate_trajectory(
+#     self,
+#     sampling_frequency: int = 3,
+#     target_attractor_ratio: float = 0.4,  # unused (kept for compatibility)
+#     tolerance: float = 0.1,               # unused (kept for compatibility)
+#     max_iter: int = 50,                   # unused (kept for compatibility)
+#     max_trajectory_restarts: int = 1000   # unused (kept for compatibility)
+# ):
+#         """
+#         Simulates a trajectory of the Boolean network.
+
+#         NOTE:
+#         - No attractor control
+#         - No rejection criteria
+#         - No restarts
+#         - Parameters kept only for interface compatibility
+#         """
+
+#         logger.info(
+#             "Simulating trajectory (simple mode). sampling_frequency=%d",
+#             sampling_frequency
+#         )
+
+#         trajectory = []
+#         attractor_counter = 0
+#         transient_counter = 0
+
+#         total_steps = self.trajectory_length * sampling_frequency
+
+#         # random initial state
+#         last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
+#         trajectory.append(last_state)
+
+#         for step in range(1, total_steps):
+
+#             if self.mode == "synchronous":
+#                 next_state = self._next_synchronous(last_state)
+#             else:
+#                 coordinate = random.randint(0, self.num_nodes - 1)
+#                 next_state = self._next_asynchronous(last_state, coordinate)
+
+#             last_state = next_state
+
+#             # check attractor
+#             is_attractor = any(next_state in attr for attr in self.attractors)
+
+#             if is_attractor:
+#                 attractor_counter += 1
+#             else:
+#                 transient_counter += 1
+
+#             # sampling
+#             if step % sampling_frequency == 0:
+#                 trajectory.append(next_state)
+
+#                 if len(trajectory) == self.trajectory_length:
+#                     logger.info(
+#                         # "Trajectory completed. Length: %d, Attractors: %d, Transients: %d",
+#                         len(trajectory),
+#                         attractor_counter,
+#                         transient_counter
+#                     )
+#                     return trajectory, attractor_counter, transient_counter
+
+#         # fallback (should not happen, but safe)
+#         logger.warning(
+#             "Trajectory ended early. Length: %d (expected %d)",
+#             len(trajectory),
+#             self.trajectory_length
+#         )
+#         return trajectory, attractor_counter, transient_counter
+
+######### te parametry wywaliłam a trajectory_length przeniosłam tu
+    #  target_attractor_ratio: float = 0.4,  # unused (kept for compatibility)
+    # tolerance: float = 0.1,               # unused (kept for compatibility)
+    # max_iter: int = 50,                   # unused (kept for compatibility)
+    # max_trajectory_restarts: int = 1000   # unused (kept for compatibility)
     def simulate_trajectory(
-    self,
-    sampling_frequency: int = 3,
-    target_attractor_ratio: float = 0.4,  # unused (kept for compatibility)
-    tolerance: float = 0.1,               # unused (kept for compatibility)
-    max_iter: int = 50,                   # unused (kept for compatibility)
-    max_trajectory_restarts: int = 1000   # unused (kept for compatibility)
-):
-        """
-        Simulates a trajectory of the Boolean network.
+        self,
+        sampling_frequency: int = 3,
+        trajectory_length: int = 50
+    ):
+            """
+            Simulates a trajectory of the Boolean network.
 
-        NOTE:
-        - No attractor control
-        - No rejection criteria
-        - No restarts
-        - Parameters kept only for interface compatibility
-        """
+            NOTE:
+            - No attractor control
+            - No rejection criteria
+            - No restarts
+            - Parameters kept only for interface compatibility
+            - trajectory leght moved to simulate_trajectory
+            """
 
-        logger.info(
-            "Simulating trajectory (simple mode). sampling_frequency=%d",
-            sampling_frequency
-        )
+            trajectory = []
+            attractor_counter = 0
+            transient_counter = 0
 
-        trajectory = []
-        attractor_counter = 0
-        transient_counter = 0
+            total_steps = trajectory_length * sampling_frequency
 
-        total_steps = self.trajectory_length * sampling_frequency
+            # random initial state
+            last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
+            trajectory.append(last_state)
 
-        # random initial state
-        last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
-        trajectory.append(last_state)
+            for step in range(1, total_steps):
 
-        for step in range(1, total_steps):
+                if self.mode == "synchronous":
+                    next_state = self._next_synchronous(last_state)
+                else:
+                    coordinate = random.randint(0, self.num_nodes - 1)
+                    next_state = self._next_asynchronous(last_state, coordinate)
 
-            if self.mode == "synchronous":
-                next_state = self._next_synchronous(last_state)
-            else:
-                coordinate = random.randint(0, self.num_nodes - 1)
-                next_state = self._next_asynchronous(last_state, coordinate)
+                last_state = next_state
 
-            last_state = next_state
+                # check attractor
+                is_attractor = any(next_state in attr for attr in self.attractors)
 
-            # check attractor
-            is_attractor = any(next_state in attr for attr in self.attractors)
+                if is_attractor:
+                    attractor_counter += 1
+                else:
+                    transient_counter += 1
 
-            if is_attractor:
-                attractor_counter += 1
-            else:
-                transient_counter += 1
+                # sampling
+                if step % sampling_frequency == 0:
+                    trajectory.append(next_state)
 
-            # sampling
-            if step % sampling_frequency == 0:
-                trajectory.append(next_state)
+                    if len(trajectory) == trajectory_length:
+                        
+                        return trajectory, attractor_counter, transient_counter
 
-                if len(trajectory) == self.trajectory_length:
-                    logger.info(
-                        # "Trajectory completed. Length: %d, Attractors: %d, Transients: %d",
-                        len(trajectory),
-                        attractor_counter,
-                        transient_counter
-                    )
-                    return trajectory, attractor_counter, transient_counter
+            # fallback (should not happen, but safe)
+            
+            return trajectory, attractor_counter, transient_counter
 
-        # fallback (should not happen, but safe)
-        logger.warning(
-            "Trajectory ended early. Length: %d (expected %d)",
-            len(trajectory),
-            self.trajectory_length
-        )
-        return trajectory, attractor_counter, transient_counter
-
-
-
-    # implemented in bnfinder
-    # def scoring_function(self, method: Literal['MDL', 'DBE']):
-    #     """
-    #     scoring function for graphs
-    #     """
-    
-    # def evaluate_accuracy(self):
-    #     """
-    #     Evaluate accuracy of the reconstructed network
-    #     Share parameters with the function above e.g. move method to init?
-    #     """
 
     def save_ground_truth(self, filepath: str = "ground_truth_edges.csv", with_header: bool = False) -> None:
         """
@@ -536,7 +561,7 @@ class BN():
         Args:
             filepath (str): Destination path for the CSV file.
         """
-        logger.info("Saving ground truth edges to: %s", filepath)
+        
 
         edges = []
 
@@ -559,9 +584,8 @@ class BN():
             else:
                 df.to_csv(filepath, index=False, header=False)
 
-            logger.info("Successfully saved %d ground truth edges.", len(edges))
+            
         except Exception as e:
-            logger.error("Error saving ground truth to CSV: %s", e)
             raise
 
     def draw_state_transition_system(self, highlight_attractors: bool = True) -> None:
@@ -575,7 +599,7 @@ class BN():
             Returns:
                 None
         """
-        logger.info("Drawing state transition system.")
+        
 
         # The color used for non-attractor states in the state transition system
         NON_ATTRACTOR_STATE_COLOR = 'lightgrey'
@@ -583,7 +607,6 @@ class BN():
         try:
             sts = self._generate_state_transition_system()
         except Exception:
-            logger.error("Failed to generate state transition system for drawing.")
             raise
 
         if highlight_attractors:
@@ -643,7 +666,6 @@ class BN():
             plt.show()
 
         except Exception as e:
-            logger.error("Error while drawing the state transition system: %s", e)
             raise
 
 
@@ -663,5 +685,4 @@ if __name__ == "__main__":
     # Create BN with fixed functions
     bn = BN(num_nodes=3, mode="asynchronous", trajectory_length=50, functions=functions)
     print(bn.functions)
-    bn.draw_state_transition_system()
 

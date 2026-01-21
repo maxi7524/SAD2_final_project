@@ -17,9 +17,9 @@ class TestBN(unittest.TestCase):
         self.functions = [f1, f2, f3]
 
         # Create BN with fixed functions
-        self.bn = BN(num_nodes=3, mode="synchronous", trajectory_length=5, functions=self.functions)
+        self.bn = BN(num_nodes=3, mode="synchronous", functions=self.functions)
 
-        self.bn2 = BN(num_nodes=3, mode="asynchronous", trajectory_length=5, functions=self.functions)
+        self.bn2 = BN(num_nodes=3, mode="asynchronous", functions=self.functions)
 
     def test_synchronous_update(self):
         # Initial state (x0, x1, x2) = (0, 0, 0)
