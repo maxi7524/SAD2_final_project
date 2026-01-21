@@ -34,7 +34,8 @@ class BooleanNetworkExperiment:
         trajectory_length: Iterable[int],
         n_trajectories: Iterable[int],
         sampling_frequency: Iterable[int],
-        score_functions: Iterable[Literal["MDL", "BDe"]],
+        score_functions: Iterable[Literal["MDL", "BDE"]],
+        # TODO - add metrics option 
 
         # BN-specific
         n_parents_per_node: Iterable[list[int]] = ([1, 2, 3],),
