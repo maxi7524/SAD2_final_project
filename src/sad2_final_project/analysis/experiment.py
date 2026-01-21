@@ -52,8 +52,8 @@ class BooleanNetworkExperiment:
             # "sampling_frequency": 3,
             "target_attractor_ratio": 0.4,  # Approximate fraction of trajectory in attractor (0-1)
             "tolerance": 0.1,               # Allowed deviation from the calculated entrance step (0-1)
-            "max_iter": 50,                 # Maximum attempts to generate a valid state per step before restarting
-            "max_trajectory_restarts": 1000  # Maximum number of trajectory restarts allowed
+            # już nie używamy "max_iter": 50,                 # Maximum attempts to generate a valid state per step before restarting
+            # już nie używamy "max_trajectory_restarts": 1000  # Maximum number of trajectory restarts allowed
         }
 
 
@@ -202,7 +202,7 @@ class BooleanNetworkExperiment:
         # ---------- 1. create BN ----------
         bn = BN(
             mode=row["update_mode"],
-            trajectory_length=row["trajectory_length"],
+            # przeniesione do metody trajectory_length=row["trajectory_length"],
             num_nodes=row["num_nodes"],
             n_parents_per_node=row["n_parents_per_node"],
         )
@@ -211,13 +211,19 @@ class BooleanNetworkExperiment:
         bn.save_ground_truth(gt_path)
 
         # ---------- 3. generate data ----------
-        simulate_trajectories_to_csv(
+        # oznaczamy czy wygenerowany dataset powiódł sie sukcesem (potrzebne do zliczania sukcesów i jeżeli brak sukcesu nie próbujemy uruchamiać bnfindera bo brak pliku)
+        success = simulate_trajectories_to_csv(
             bn_instance=bn,
             num_trajectories=row["n_trajectories"],
             output_file=dataset_path,
             sampling_frequency=row["sampling_frequency"],
+            trajectory_length=row["trajectory_length"],
             **self.simulate_trajectories_to_csv_kwargs
         )
+
+        if not success:
+            print(f"[INFO] Dataset {dataset_path} NOT created (requirements not met). Skipping inference.")
+            return False
 
         # ---------- 4. inference ----------
         run_bnfinder(
@@ -235,6 +241,7 @@ class BooleanNetworkExperiment:
 
         )
 
+        return True
     # =========================
     # PARALLEL EXECUTION
     # =========================
@@ -248,6 +255,7 @@ class BooleanNetworkExperiment:
         Run experiment.
         - n_jobs = number of parallel processes
         - subset = optional subset of experiment_df
+        Returns: number of successful datasets
         """
 
         # save metadata for experiment (common: condition_id) # -> data/experiment_name/metadata
@@ -256,14 +264,22 @@ class BooleanNetworkExperiment:
 
         rows = [row for _, row in df.iterrows()]
 
+        success_count = 0
+
         if n_jobs == 1:
             for row in rows:
-                self._run_single_condition(row)
+                if self._run_single_condition(row):
+                    success_count += 1
         else:
             with mp.Pool(processes=n_jobs) as pool:
-                pool.map(self._run_single_condition, rows)
+                results = pool.map(self._run_single_condition, rows)
+                success_count = sum(results)
+
+        print(f"\n[SUMMARY] Generated datasets: {success_count}/{len(rows)}")
+
         # merge all csv
         self._merge_csv()
         # obtain metadata
         self.save_experiment_df_to_csv()
+        return success_count
         
