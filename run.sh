@@ -2,4 +2,4 @@
 set -e
 uv sync
 uv pip install -e .
-uv source .venv/bin/activate
+source .venv/bin/activate
