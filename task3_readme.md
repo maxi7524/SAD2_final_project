@@ -30,6 +30,7 @@ python2 -m pip install fpconst
 python2 -m pip install "scipy==1.2.3"
 python2 pip install BNfinder
 python2 -m pip install BNfinder
+rm Python-2.7.18.tgz 
 which bnf
 ```
 

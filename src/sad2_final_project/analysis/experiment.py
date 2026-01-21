@@ -3,7 +3,6 @@ from ast import Dict
 from pathlib import Path
 from itertools import product
 import shutil
-from subprocess import ABOVE_NORMAL_PRIORITY_CLASS
 import pandas as pd
 import multiprocessing as mp
 from typing import Iterable, Literal, Optional
@@ -38,7 +37,7 @@ class BooleanNetworkExperiment:
         sampling_frequency: Iterable[int],
         score_functions: Iterable[Literal["MDL", "BDE"]],
         # TODO - add metrics option - TO JOANNA: wstaw to do jeszcze jednej sekcji # analysis
-        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]],
+        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
         # TODO - add score analysis_score_functions - and pass it only for printing score functions (this parameter is not being in cartesian coordinates)
         analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 
