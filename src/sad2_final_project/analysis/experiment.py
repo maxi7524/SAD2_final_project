@@ -166,7 +166,7 @@ class BooleanNetworkExperiment:
         if path.exists() and path.is_dir():
             shutil.rmtree(path)
         else:
-            raise FileNotFoundError(f"Katalog nie istnieje: {path}")
+            pass
 
     # =========================
     # CORE EXECUTION LOGIC
