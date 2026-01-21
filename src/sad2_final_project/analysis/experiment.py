@@ -2,6 +2,7 @@
 from ast import Dict
 from pathlib import Path
 from itertools import product
+import shutil
 import pandas as pd
 import multiprocessing as mp
 from typing import Iterable, Literal, Optional
@@ -65,7 +66,8 @@ class BooleanNetworkExperiment:
             "datasets_bnfinder": self.experiment_root / "datasets_bnfinder",
             "results": self.experiment_root / "results",
         }
-
+        # cleaning old experiment, and create new catalogues
+        self._rm_old_experiment()
         for p in self.paths.values():
             p.mkdir(parents=True, exist_ok=True)
 
@@ -116,6 +118,55 @@ class BooleanNetworkExperiment:
     def show_paths(self) -> dict:
         """Return dictionary with all important paths."""
         return self.paths
+    
+    # =========================
+    # File management
+    # =========================
+
+    def save_experiment_df_to_csv(self, csv_path: str | Path = None) -> None:
+        """Saves experiment df (metadata)"""
+        # default path
+        if csv_path is None:
+            csv_path = self.paths['results'] / 'metadata.csv'
+        # saving results
+        self.experiment_df.to_csv(csv_path)
+        pass
+
+    def _merge_csv(self, csv_dir: str | Path = None) -> None:
+        """
+        Inner function
+        Joins all outputs from `_run_single_condition`.
+        """
+        # default path
+        if csv_dir is None:
+            csv_dir = self.paths['results']
+
+        csv_dir = Path(csv_dir)
+        rtn_csv = csv_dir / f'joined_results_{self.experiment_name}.csv'
+        # collect of .csv files
+        csv_files = sorted(csv_dir.glob("*.csv"))
+        if not csv_files:
+            raise RuntimeError("No CSV files to merge")
+        # join pdfs
+        df = pd.concat(
+            (pd.read_csv(f) for f in csv_files),
+            ignore_index=True
+        )
+        # save results
+        df.to_csv(rtn_csv, index=False)
+        # remove other .csvs
+        for f in csv_files:
+            if f != rtn_csv:
+                f.unlink()
+        pass
+
+    def _rm_old_experiment(self) -> None:
+        path = self.experiment_root
+
+        if path.exists() and path.is_dir():
+            shutil.rmtree(path)
+        else:
+            raise FileNotFoundError(f"Katalog nie istnieje: {path}")
 
     # =========================
     # CORE EXECUTION LOGIC
@@ -179,6 +230,8 @@ class BooleanNetworkExperiment:
         - subset = optional subset of experiment_df
         """
 
+        # save metadata for experiment (common: condition_id) # -> data/experiment_name/metadata
+
         df = subset if subset is not None else self.experiment_df
 
         rows = [row for _, row in df.iterrows()]
@@ -189,3 +242,8 @@ class BooleanNetworkExperiment:
         else:
             with mp.Pool(processes=n_jobs) as pool:
                 pool.map(self._run_single_condition, rows)
+        # merge all csv
+        self._merge_csv()
+        # obtain metadata
+        self.save_experiment_df_to_csv()
+        
