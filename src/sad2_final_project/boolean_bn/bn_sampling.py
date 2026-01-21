@@ -90,38 +90,29 @@ import random
 
 
 ##### tutaj generujemy jeden dataset jeżeli w pewnym momencie nie zgadza nam sie liczba stanów attraktorowych zwracamyu null jeżeli uda sie spełnić wymagania to zapisujemuy do csv
-def simulate_dataset_to_csv(
-    output_file: str,
-    target_attractor_ratio: float,
-    number_of_trajectories: int,
-    tolerance: float = 0.1,
-    sampling_frequency: int = 3,
-    trajectory_length: int = 50,
-):
+def simulate_trajectories_to_csv(
+        bn_instance,
+        num_trajectories,
+        output_file,
+        sampling_frequency,
+        trajectory_length,
+        target_attractor_ratio,
+        tolerance
+        ):
     """
     Generates a dataset from multiple trajectories and saves to CSV for BNFinder.
     Returns True if dataset accepted and saved, False if rejected.
     """
-    # losujemy liczbę wierzchołków BN
-    num_nodes = random.randint(5, 16)
 
-    # losujemy tryb działania BN
-    mode = random.choice(["synchronous", "asynchronous"])
-
-    # tworzymy nową instancję BN
-    bn_instance = BN(
-        num_nodes=num_nodes,
-        mode=mode
-    )
     min_ratio = max(0.0, target_attractor_ratio - tolerance)
     max_ratio = min(1.0, target_attractor_ratio + tolerance)
 
     dataset_rows = []
     attractor_count = 0
     total_count = 0
-    max_total_states = number_of_trajectories * trajectory_length
+    max_total_states = num_trajectories * trajectory_length
 
-    for traj_index in range(number_of_trajectories):
+    for traj_index in range(num_trajectories):
         trajectory, att_count, trans_count = bn_instance.simulate_trajectory(
             sampling_frequency=sampling_frequency,
             trajectory_length=trajectory_length
@@ -163,55 +154,6 @@ def simulate_dataset_to_csv(
 
     print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
     return True
-
-
-# generuje wiele datasetów, sama losuje im parametry jeżeli chcemy je podawać to trzeba to zmienić 
-# zwraca ile datasetóœ spełniło wymagania
-def simulate_random_varied_datasets_to_csv(
-    output_dir: str,
-    num_datasets: int = 10,
-    target_ratio_range: tuple = (0.2, 0.8),
-    sampling_frequency_range: tuple = (1, 5),
-    number_of_trajectories_range: tuple = (5, 15),
-    trajectory_length_range: tuple = (50, 150),
-    tolerance: float = 0.1
-):
-    """
-    Generates multiple datasets with randomly chosen parameters within given ranges.
-    Saves accepted datasets to CSV using `simulate_dataset_to_csv`.
-    Returns stats: number of accepted and rejected datasets.
-    """
-
-    os.makedirs(output_dir, exist_ok=True)
-    stats = {"accepted": 0, "rejected": 0}
-
-    for idx in range(num_datasets):
-        # losujemy parametry
-        ratio = random.uniform(*target_ratio_range)
-        freq = random.randint(*sampling_frequency_range)
-        n_traj = random.randint(*number_of_trajectories_range)
-        traj_len = random.randint(*trajectory_length_range)
-
-        filename = os.path.join(output_dir, f"dataset_{idx+1}_ratio_{ratio:.2f}.csv")
-
-        success = simulate_dataset_to_csv(
-            output_file=filename,
-            target_attractor_ratio=ratio,
-            number_of_trajectories=n_traj,
-            tolerance=tolerance,
-            sampling_frequency=freq,
-            trajectory_length=traj_len
-        )
-
-        if success:
-            stats["accepted"] += 1
-        else:
-            stats["rejected"] += 1
-
-    print(f"Finished generating datasets. Accepted: {stats['accepted']}, Rejected: {stats['rejected']}")
-    return stats
-
-
 
 if __name__ == "__main__":
 
