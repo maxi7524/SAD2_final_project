@@ -355,6 +355,13 @@ class BN():
             # random initial state
             last_state = tuple(random.choice([0, 1]) for _ in range(self.num_nodes))
             trajectory.append(last_state)
+            
+            # Count initial state
+            is_attractor = any(last_state in attr for attr in self.attractors)
+            if is_attractor:
+                attractor_counter += 1
+            else:
+                transient_counter += 1
 
             for step in range(1, total_steps):
 

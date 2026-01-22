@@ -92,6 +92,7 @@ def run_bnfinder(
         
         try:
             ### Run wrapper
+            #TODO BŁĄD: tutaj go wywala
             bnf.run_bnfinder(bnf_file_path, output_sif, score=score)
             
             ### Parse output
