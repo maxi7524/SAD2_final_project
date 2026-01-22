@@ -79,7 +79,7 @@ def run_bnfinder(
             ### Parse output
             inferred_edges = bnf.parse_sif_results(output_sif)
             print(f"[{score}] Inferred {len(inferred_edges)} edges.")
-
+            print("a")
             ### Metrics
             #### case 0 - no edges:
             if len(inferred_edges) == 0:
@@ -103,6 +103,7 @@ def run_bnfinder(
                 print("   (Ground truth file found, evaluating metrics)")
                 #### Obtain metrics
                 metrics = evaluate_results_metrics(true_edges, inferred_edges, metrics_list=analysis_metrics)
+                print("b")
                 #### obtain cost function: 
                 cost_functions = score_dag_from_sif(dataset_df=df, sif_file_path=output_sif)
                 #### Sanity check

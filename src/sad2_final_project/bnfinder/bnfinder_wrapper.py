@@ -113,13 +113,40 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
         print("   BNFinder execution failed!")
         print("   Error Output:\n", e.stderr)
         raise e
+#### split nie działało dla tuple
+# def parse_sif_results(sif_file):
+#     """
+#     Parses the SIF output file to extract inferred edges.
+    
+#     Args:
+#         sif_file (str): Path to the .sif file.
+        
+#     Returns:
+#         list of tuples: [(parent, child), ...]
+#     """
+#     edges = []
+#     if not os.path.exists(sif_file):
+#         print(f"   Warning: SIF file {sif_file} not found (possibly no edges inferred).")
+#         return edges
+
+#     with open(sif_file, 'r') as f:
+#         for line in f:
+#             # TODO:  wysypuje sie pokazuje, że to tuple
+#             parts = line.strip().split()
+#             print(parts)
+#             # SIF format: Parent Label Child (e.g., G1 + G2)
+#             if len(parts) >= 3:
+#                 parent = parts[0]
+#                 child = parts[2]
+#                 edges.append((parent, child))
+#     return edges
 
 def parse_sif_results(sif_file):
     """
     Parses the SIF output file to extract inferred edges.
     
     Args:
-        sif_file (str): Path to the .sif file.
+        sif_file (str or Path): Path to the .sif file.
         
     Returns:
         list of tuples: [(parent, child), ...]
@@ -131,12 +158,18 @@ def parse_sif_results(sif_file):
 
     with open(sif_file, 'r') as f:
         for line in f:
-            parts = line.strip().split()
-            # SIF format: Parent Label Child (e.g., G1 + G2)
-            if len(parts) >= 3:
-                parent = parts[0]
-                child = parts[2]
+            # upewniamy się, że mamy string
+            # if isinstance(line, (list, tuple)):
+            #     parts = line
+            # else:
+            #     parts = line.strip().split()
+            
+            if len(line) >= 3:
+                print(3)
+                parent = line[0]
+                child = line[2]
                 edges.append((parent, child))
+    
     return edges
 
 def load_structure_from_sif(sif_path: str) -> dict[str, list[str]]:

@@ -19,10 +19,14 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
     inferred_edge_set = set()
     for edge in inferred_edges:
         # Extract nodes from the format 'G<int a> -> G<int b>' and map 'Gn' to 'x{n-1}'
-        parts = edge.split(" -> ")
-        if len(parts) == 2:
-            source = parts[0].strip()
-            target = parts[1].strip()
+        ###### zmiana bo split sie wywalał
+        # print("start split")
+        # parts = edge.split(" -> ")
+        # print("stop split")
+        ####### czy to zawsze będzie 3?
+        if len(edge) == 3:
+            source = edge[0].strip()
+            target = edge[1].strip()
             # Replace 'Gn' with 'x{n-1}'
             source = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", source)
             target = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", target)
@@ -46,9 +50,18 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
     def calculate_sensitivity(recall):
         return recall  # Sensitivity is equivalent to recall
 
+    ####### true_edges + inferred_edges tu sie wywalało że jeden to set drugi list
+    # def calculate_ahd(fp, fn):
+    #     all_nodes = set()
+    #     for edge in true_edges + inferred_edges:
+    #         all_nodes.update(edge)
+    #     n = len(all_nodes)
+    #     total_possible_edges = n * (n - 1)
+    #     return (fp + fn) / total_possible_edges if total_possible_edges > 0 else 0.0
+    
     def calculate_ahd(fp, fn):
         all_nodes = set()
-        for edge in true_edges + inferred_edges:
+        for edge in true_edge_set.union(inferred_edge_set):
             all_nodes.update(edge)
         n = len(all_nodes)
         total_possible_edges = n * (n - 1)
