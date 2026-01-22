@@ -5,7 +5,7 @@ import matplotlib.colors as mcolors
 import random
 from typing import Literal
 import pandas as pd
-
+import os
 
 
 class BN():
@@ -510,6 +510,35 @@ class BN():
             raise
 
 
+def load_bnet_to_BN(file_path: str) -> BN:
+    """
+    Parses a .bnet file and returns a BN object with functions converted to DNF.
+    """
+    nodes = []
+    functions = []
+
+    algebra = BooleanAlgebra()
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
+
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+
+            if not line or line.startswith('#') or line.lower().strip() == 'targets,factors':
+                continue
+
+            target, expression = [part.strip() for part in line.split(',', 1)]
+            parsed_expr = algebra.parse(expression)
+            dnf_expr = algebra.dnf(parsed_expr)
+
+            nodes.append(target)
+            functions.append(str(dnf_expr))
+
+    return BN(nodes, functions)
+
+
 if __name__ == "__main__":
     algebra = BooleanAlgebra()
     x1 = algebra.Symbol('x0')
@@ -523,6 +552,9 @@ if __name__ == "__main__":
 
     functions = [f1, f2, f3]
 
+    '''
+    tmp = load_bnet_to_BN("model_id_37/model.bnet")
+    '''
     # Create BN with fixed functions
     bn = BN(num_nodes=3, mode="asynchronous", trajectory_length=50, functions=functions)
     print(bn.functions)
