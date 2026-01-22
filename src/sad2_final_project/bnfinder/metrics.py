@@ -86,7 +86,7 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
     # Compute metrics conditionally
     metric_values = {}
 
-    # TODO - PACKAGE: write some function that wraps it up 
+    # TODO LIBRARY: write some function that wraps it up 
     if 'TP' in metrics_list:
         metric_values['TP'] = calculate_tp()
     if 'FP' in metrics_list:

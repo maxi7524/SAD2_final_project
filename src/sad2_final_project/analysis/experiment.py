@@ -36,9 +36,8 @@ class BooleanNetworkExperiment:
         n_trajectories: Iterable[int],
         sampling_frequency: Iterable[int],
         score_functions: Iterable[Literal["MDL", "BDE"]],
-        # TODO - add metrics option - TO JOANNA: wstaw to do jeszcze jednej sekcji # analysis
         analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
-        # TODO - add score analysis_score_functions - and pass it only for printing score functions (this parameter is not being in cartesian coordinates)
+        # TODO LIBRARY: add analysis part fo cost functions
         analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 
         # BN-specific

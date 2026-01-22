@@ -187,7 +187,6 @@ class BN():
 
         return attractors
 
-    ###### TODO START: modified generate_random_function (any number of )
     def _build_random_boolean_expression(self, parents: list):
         """
         Builds a BooleanAlgebra expression from a list of parent symbols
@@ -213,8 +212,6 @@ class BN():
 
         return expr
 
-
-    ###### END:  modified generate_random_function
     def generate_random_functions(self, n_parents_per_node: list[int] = [2, 3]):
         """
         Chooses parents and generates random Boolean functions.

@@ -64,7 +64,7 @@ def simulate_trajectories_to_csv(
 
     min_ratio = max(0.0, target_attractor_ratio - tolerance)
     max_ratio = min(1.0, target_attractor_ratio + tolerance)
-    # TODO
+    # TODO REMOVE: debug mode - trajectories
     # print('Ratios')
     # print(min_ratio)
     # print(max_ratio)
@@ -85,7 +85,7 @@ def simulate_trajectories_to_csv(
         attractor_count += att_count
         total_count += traj_total
 
-        # TODO
+        # TODO REMOVE: debug mode trajectories
         # dodajemy trajektorię do datasetu
         dataset_rows.append(trajectory)
 

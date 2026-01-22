@@ -33,7 +33,7 @@ def _load_ground_truth(filepath):
     for _, row in df.iterrows():
         edges.add((str(row[0]), str(row[1]))) # Parent, Child
     return edges
-# TODO was problem - to be checkecd 
+# TODO CHECK: was problem with parsing value to csv 
 def _load_ground_truth(filepath):
     """
     Loads ground truth edges from a CSV for evaluation.
@@ -62,7 +62,7 @@ def run_bnfinder(
     score_functions: list[str] = ["MDL", "BDE"],
     # analysis parameters
     analysis_metrics: list[str] = ["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
-    # TODO add later to scores
+    # TODO LIBRARY: add later to scores
     analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 ):
     # Paths managements
@@ -129,7 +129,6 @@ def run_bnfinder(
                 assert isinstance(cost_functions, dict)
                 #### Format metrics
                 row = {
-                    ##### TODO - check i f overwriting work properly 
                     ##### groups
                     "dataset": dataset_name,
                     "score": score,

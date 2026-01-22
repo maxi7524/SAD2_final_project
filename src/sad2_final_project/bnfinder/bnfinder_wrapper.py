@@ -75,7 +75,6 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
     
     # Construct command: python2 path/to/bnf -e input -n output -s Score -v
     # Note: We use lowercase '-s' based on the installed version 2.1.1
-    # TODO remove suffix 
     
     cmd = [
         "python2", 
@@ -93,7 +92,6 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
         # We capture stdout/stderr to keep the main terminal clean, 
         # but you can print them for debugging if needed.
         
-        #TODO add proper path 
         log_path = Path(str(output_sif.parent) + '/' + output_sif.stem + f'_log.txt')
         # add proper path 
         with open(log_path, "w") as log_f:
@@ -105,8 +103,7 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
                 text=True
             )
         print(f"   Success! Output saved to {output_sif}")
-        #TODO - funkcja do odczytu:
-        # musimy przechwycić wynik, i jakoś go zapisać w innym pliku, jako score 
+         
 
         
     except subprocess.CalledProcessError as e:
