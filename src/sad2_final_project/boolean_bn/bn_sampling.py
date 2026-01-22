@@ -74,40 +74,85 @@ def simulate_trajectories_to_csv(
     total_count = 0
     max_total_states = num_trajectories * trajectory_length
 
-    for traj_index in range(num_trajectories):
-        #
-        trajectory, att_count, trans_count = bn_instance.simulate_trajectory(
-            sampling_frequency=sampling_frequency,
-            trajectory_length=trajectory_length
-        )
-        # print(att_count, trans_count)
-        traj_total = att_count + trans_count
-        attractor_count += att_count
-        total_count += traj_total
+    # for traj_index in range(num_trajectories):
+    #     #
+    #     trajectory, att_count, trans_count = bn_instance.simulate_trajectory(
+    #         sampling_frequency=sampling_frequency,
+    #         trajectory_length=trajectory_length
+    #     )
+    #     # print(att_count, trans_count)
+    #     traj_total = att_count + trans_count
+    #     attractor_count += att_count
+    #     total_count += traj_total
 
-        # TODO REMOVE: debug mode trajectories
-        # dodajemy trajektorię do datasetu
-        dataset_rows.append(trajectory)
+    #     # TODO REMOVE: debug mode trajectories
+    #     # dodajemy trajektorię do datasetu
+    #     dataset_rows.append(trajectory)
 
-        # --- wczesne odrzucenie 
-        remaining_states = max_total_states - total_count
-        # print(f'{remaining_states=}')
-        max_possible_ratio = (attractor_count + remaining_states) / max_total_states
-        # print(f'{max_possible_ratio=}')
-        min_possible_ratio = attractor_count / max_total_states
-        # print(f'{min_possible_ratio=}')
-        # TODO COMMENTED
-        # if (max_possible_ratio < min_ratio or min_possible_ratio > max_ratio) and traj_index == num_trajectories - 1:
-            # return False  # dataset odrzucony
+    #     # --- wczesne odrzucenie 
+    #     remaining_states = max_total_states - total_count
+    #     # print(f'{remaining_states=}')
+    #     max_possible_ratio = (attractor_count + remaining_states) / max_total_states
+    #     # print(f'{max_possible_ratio=}')
+    #     min_possible_ratio = attractor_count / max_total_states
+    #     # print(f'{min_possible_ratio=}')
+    #     # TODO COMMENTED
+    #     # if (max_possible_ratio < min_ratio or min_possible_ratio > max_ratio) and traj_index == num_trajectories - 1:
+    #         # return False  # dataset odrzucony
 
-    # finalna proporcja
-    actual_ratio = attractor_count / total_count if total_count > 0 else 0.0
+    ### 3 razy próbujemy wygenerować dataset -> jeżeli nie spełni wymagań i tak zapisujemy
+    for _ in range(3):
+        for traj_index in range(num_trajectories):
+            #
+            trajectory, att_count, trans_count = bn_instance.simulate_trajectory(
+                sampling_frequency=sampling_frequency,
+                trajectory_length=trajectory_length
+            )
+            # print(att_count, trans_count)
+            traj_total = att_count + trans_count
+            attractor_count += att_count
+            total_count += traj_total
+
+            # TODO REMOVE: debug mode trajectories
+            # dodajemy trajektorię do datasetu
+            dataset_rows.append(trajectory)
+
+            # --- wczesne odrzucenie 
+            remaining_states = max_total_states - total_count
+            # print(f'{remaining_states=}')
+            max_possible_ratio = (attractor_count + remaining_states) / max_total_states
+            # print(f'{max_possible_ratio=}')
+            min_possible_ratio = attractor_count / max_total_states
+            # print(f'{min_possible_ratio=}')
+            # TODO COMMENTED
+            # if (max_possible_ratio < min_ratio or min_possible_ratio > max_ratio) and traj_index == num_trajectories - 1:
+                # return False  # dataset odrzucony
+
+        # finalna proporcja
+        actual_ratio = attractor_count / total_count if total_count > 0 else 0.0
+        if actual_ratio>=min_ratio and actual_ratio<=max_ratio:
+            with open(output_file, "w", newline="") as f:
+                writer = csv.writer(f)
+
+                # nagłówki
+                header = [f"G{i+1}" for i in range(len(dataset_rows[0][0]))]
+                writer.writerow(header)
+
+                # zapis każdej trajektorii z pustą linią między nimi
+                for trajectory in dataset_rows:
+                    writer.writerows(trajectory)
+                    writer.writerow([])  # linia przerwy
+
+            print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
+            return True, actual_ratio
+
 
     # TODO COMMENTED:
     # if not (min_ratio <= actual_ratio <= max_ratio):
     #     return False  # dataset odrzucony
 
     # --- zapis do CSV ---
+    ### nawet jeżeli nie przejdzie statystyk
     with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
 
@@ -121,7 +166,7 @@ def simulate_trajectories_to_csv(
             writer.writerow([])  # linia przerwy
 
     print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
-    return True
+    return False, actual_ratio
 
 if __name__ == "__main__":
 

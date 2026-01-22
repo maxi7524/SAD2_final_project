@@ -70,7 +70,7 @@ class BooleanNetworkExperiment:
             "ground_truth": self.experiment_root / "bn_ground_truth",
             "datasets": self.experiment_root / "datasets",
             "datasets_bnfinder": self.experiment_root / "datasets_bnfinder",
-            "results": self.experiment_root / "results",
+            "results": self.experiment_root / "results"
         }
         # cleaning old experiment, and create new catalogues
         self._rm_old_experiment()
@@ -120,6 +120,8 @@ class BooleanNetworkExperiment:
         self.experiment_df["condition_id"] = (
             self.experiment_df.index.astype(str).str.zfill(4)
         )
+        self.experiment_df["success"] = False
+        self.experiment_df["attractor_ratio"] = np.nan
 
     # =========================
     # INSPECTION
@@ -226,7 +228,6 @@ class BooleanNetworkExperiment:
         # ---------- 1. create BN ----------
         bn = BN(
             mode=row["update_mode"],
-            # przeniesione do metody trajectory_length=row["trajectory_length"],
             num_nodes=row["num_nodes"],
             n_parents_per_node=row["n_parents_per_node"],
         )
@@ -236,7 +237,7 @@ class BooleanNetworkExperiment:
 
         # ---------- 3. generate data ----------
         # oznaczamy czy wygenerowany dataset powiódł sie sukcesem (potrzebne do zliczania sukcesów i jeżeli brak sukcesu nie próbujemy uruchamiać bnfindera bo brak pliku)
-        success = simulate_trajectories_to_csv(
+        success, ratio = simulate_trajectories_to_csv(
             bn_instance=bn,
             num_trajectories=row["n_trajectories"],
             output_file=dataset_path,
@@ -245,9 +246,9 @@ class BooleanNetworkExperiment:
             **self.simulate_trajectories_to_csv_kwargs
         )
 
-        if not success:
-            print(f"[INFO] Dataset {dataset_path} NOT created (requirements not met). Skipping inference.")
-            return False
+        # if not success:
+        #     print(f"[INFO] Dataset {dataset_path} NOT created (requirements not met). Skipping inference.")
+        #     return False
 
         # ---------- 4. inference ----------
         run_bnfinder(
@@ -264,6 +265,10 @@ class BooleanNetworkExperiment:
             analysis_score_functions= self.analysis_score_functions,
 
         )
+        df = pd.read_csv(metrics_path)
+        df["success"] = success
+        df["attractor_ratio"] = ratio
+        df.to_csv(metrics_path, index=False)
 
         return True
     # =========================
