@@ -101,7 +101,7 @@ def simulate_trajectories_to_csv(
     #         # return False  # dataset odrzucony
 
     ### 3 razy próbujemy wygenerować dataset -> jeżeli nie spełni wymagań i tak zapisujemy
-    for _ in range(3):
+    for _ in range(2):
         for traj_index in range(num_trajectories):
             #
             trajectory, att_count, trans_count = bn_instance.simulate_trajectory(
