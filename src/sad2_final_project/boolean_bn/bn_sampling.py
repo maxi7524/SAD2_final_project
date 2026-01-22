@@ -64,9 +64,10 @@ def simulate_trajectories_to_csv(
 
     min_ratio = max(0.0, target_attractor_ratio - tolerance)
     max_ratio = min(1.0, target_attractor_ratio + tolerance)
-    print('Ratios')
-    print(min_ratio)
-    print(max_ratio)
+    # TODO
+    # print('Ratios')
+    # print(min_ratio)
+    # print(max_ratio)
 
     dataset_rows = []
     attractor_count = 0
@@ -79,21 +80,22 @@ def simulate_trajectories_to_csv(
             sampling_frequency=sampling_frequency,
             trajectory_length=trajectory_length
         )
-        print(att_count, trans_count)
+        # print(att_count, trans_count)
         traj_total = att_count + trans_count
         attractor_count += att_count
         total_count += traj_total
 
+        # TODO
         # dodajemy trajektorię do datasetu
         dataset_rows.append(trajectory)
 
         # --- wczesne odrzucenie ---
         remaining_states = max_total_states - total_count
-        print(f'{remaining_states=}')
+        # print(f'{remaining_states=}')
         max_possible_ratio = (attractor_count + remaining_states) / max_total_states
-        print(f'{max_possible_ratio=}')
+        # print(f'{max_possible_ratio=}')
         min_possible_ratio = attractor_count / max_total_states
-        print(f'{min_possible_ratio=}')
+        # print(f'{min_possible_ratio=}')
         if max_possible_ratio < min_ratio or min_possible_ratio > max_ratio:
             return False  # dataset odrzucony
 

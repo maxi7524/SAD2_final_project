@@ -33,6 +33,23 @@ def _load_ground_truth(filepath):
     for _, row in df.iterrows():
         edges.add((str(row[0]), str(row[1]))) # Parent, Child
     return edges
+# TODO was problem - to be checkecd 
+def _load_ground_truth(filepath):
+    """
+    Loads ground truth edges from a CSV for evaluation.
+    Expected format: Parent,Child
+    """
+    if not os.path.exists(filepath):
+        return None
+    
+    print(f"-> Loading ground truth from: {filepath}")
+    edges = set()
+    df = pd.read_csv(filepath)
+    for _, row in df.iterrows():
+        parent = str(row.iloc[0]).strip()
+        child = str(row.iloc[1]).strip()
+        edges.add((parent, child))  # Parent, Child
+    return edges
 
 def run_bnfinder(
     # paths
@@ -45,6 +62,7 @@ def run_bnfinder(
     score_functions: list[str] = ["MDL", "BDE"],
     # analysis parameters
     analysis_metrics: list[str] = ["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
+    # TODO add later to scores
     analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 ):
     # Paths managements
