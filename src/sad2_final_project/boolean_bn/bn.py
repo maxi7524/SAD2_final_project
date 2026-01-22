@@ -491,9 +491,7 @@ def load_bnet_to_BN(file_path: str) -> BN:
 
     return BN(nodes, functions)
 
-# ============================================================
-# Example usage
-# ============================================================
+
 
 if __name__ == "__main__":
     algebra = BooleanAlgebra()
@@ -508,10 +506,10 @@ if __name__ == "__main__":
 
     functions = [f1, f2, f3]
 
-    '''
-    tmp = load_bnet_to_BN("model_id_37/model.bnet")
-    '''
+
+    tmp = load_bnet_to_BN("/Users/chmuradin/Desktop/tmp_sad/SAD2_final_project/model_id_37/model.bnet")
+
     # Create BN with fixed functions
-    bn = BN(num_nodes=3, mode="asynchronous", trajectory_length=50, functions=functions)
-    print(bn.functions)
+    #bn = BN(num_nodes=3, mode="asynchronous", functions=functions)
+    print(tmp.functions)
 

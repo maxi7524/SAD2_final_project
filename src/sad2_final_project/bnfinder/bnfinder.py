@@ -64,6 +64,9 @@ def run_bnfinder(
     analysis_metrics: list[str] = ["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
     # TODO LIBRARY: add later to scores
     analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
+    # dataset parameters
+    dataset_succeeded: bool | None = None,
+    attractor_ratio: float | None = None,
 ):
     # Paths managements
     dataset_path = Path(dataset_path)
@@ -107,6 +110,9 @@ def run_bnfinder(
                 row = {
                     "dataset": dataset_name,
                     "score": score,
+                    ##### dataset parameters
+                    "dataset_succeeded": dataset_succeeded,
+                    "attractor_ratio": attractor_ratio,
                     ##### metrics
                     **metrics,
                     ##### cost functions
@@ -133,6 +139,9 @@ def run_bnfinder(
                     ##### groups
                     "dataset": dataset_name,
                     "score": score,
+                    ##### dataset parameters
+                    "dataset_succeeded": dataset_succeeded,
+                    "attractor_ratio": attractor_ratio,
                     ##### metrics
                     **metrics,
                     ##### cost functions

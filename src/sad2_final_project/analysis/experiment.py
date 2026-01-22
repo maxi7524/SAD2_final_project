@@ -261,14 +261,11 @@ class BooleanNetworkExperiment:
             ## model parameters
             score_functions=[row["score_function"]],
             ## analysis settings
-            analysis_metrics = self.analysis_metrics,
-            analysis_score_functions= self.analysis_score_functions,
-
+            analysis_metrics=self.analysis_metrics,
+            analysis_score_functions=self.analysis_score_functions,
+            dataset_succeeded=success,
+            attractor_ratio=ratio,
         )
-        df = pd.read_csv(metrics_path)
-        df["success"] = success
-        df["attractor_ratio"] = ratio
-        df.to_csv(metrics_path, index=False)
 
         return True
     # =========================
@@ -311,4 +308,4 @@ class BooleanNetworkExperiment:
         # obtain metadata
         self.save_experiment_df_to_csv()
         return success_count
-        
+
