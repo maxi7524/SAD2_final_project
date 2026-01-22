@@ -17,21 +17,22 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
 
     # Parse inferred edges to match the format of true edges
     inferred_edge_set = set()
-    for edge in inferred_edges:
-        # Extract nodes from the format 'G<int a> -> G<int b>' and map 'Gn' to 'x{n-1}'
-        ###### zmiana bo split sie wywalał
-        # print("start split")
-        # parts = edge.split(" -> ")
-        # print("stop split")
-        ####### czy to zawsze będzie 3?
-        if len(edge) == 3:
-            source = edge[0].strip()
-            target = edge[1].strip()
-            # Replace 'Gn' with 'x{n-1}'
-            source = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", source)
-            target = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", target)
-            inferred_edge_set.add((source, target))
-    inferred_edge_set = set([(f'x{el_1[1]-1}', f'x{el_2[1]-1}') for el_1, el_2 in inferred_edges])
+    # for edge in inferred_edges:
+    #     #print("edge:", edge)
+    #     # Extract nodes from the format 'G<int a> -> G<int b>' and map 'Gn' to 'x{n-1}'
+    #     ###### zmiana bo split sie wywalał
+    #     # print("start split")
+    #     # parts = edge.split(" -> ")
+    #     # print("stop split")
+    #     ####### czy to zawsze będzie 3?
+    #     if len(edge) == 3:
+    #         source = edge[0].strip()
+    #         target = edge[1].strip()
+    #         # Replace 'Gn' with 'x{n-1}'
+    #         source = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", source)
+    #         target = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", target)
+    #         inferred_edge_set.add((source, target))
+    inferred_edge_set = set([(f'x{int(el_1[1])-1}', f'x{int(el_2[1])-1}') for el_1, el_2 in inferred_edges])
 
     def calculate_tp():
         return len(true_edge_set & inferred_edge_set)

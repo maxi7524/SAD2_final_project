@@ -209,7 +209,7 @@ class BooleanNetworkExperiment:
     # =========================
     # CORE EXECUTION LOGIC
     # =========================
-    def _run_single_condition(self, row: pd.Series) -> None:
+    def _run_single_condition(self, row: pd.Series) -> bool:
         """
         Executes ONE experimental condition.
         This function is process-safe.

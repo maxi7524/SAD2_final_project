@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
+import re
 
 
 def get_bnfinder_path():
@@ -153,19 +154,18 @@ def parse_sif_results(sif_file):
         print(f"   Warning: SIF file {sif_file} not found (possibly no edges inferred).")
         return edges
 
+    sif_pattern = re.compile(r"^(\S+)\s+h\s+(\S+)$")
+
     with open(sif_file, 'r') as f:
         for line in f:
-            # upewniamy się, że mamy string
-            # if isinstance(line, (list, tuple)):
-            #     parts = line
-            # else:
-            #     parts = line.strip().split()
-            
-            if len(line) >= 3:
-                print(3)
-                parent = line[0]
-                child = line[2]
+            line = line.strip().replace('-', 'h').replace('+', 'h')
+            if len(line) < 3:
+                continue
+            match = sif_pattern.match(line.strip())
+            if match:
+                parent, child = match.groups()
                 edges.append((parent, child))
+                print((parent, child))
     
     return edges
 
