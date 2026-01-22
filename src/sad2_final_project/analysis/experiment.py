@@ -276,11 +276,13 @@ class BooleanNetworkExperiment:
         *,
         n_jobs: int = 1,
         subset: Optional[pd.DataFrame] = None,
+        progress_interval: int = 100,
     ):
         """
         Run experiment.
         - n_jobs = number of parallel processes
         - subset = optional subset of experiment_df
+        - progress_interval = print progress every N steps
         Returns: number of successful datasets
         """
 
@@ -291,17 +293,24 @@ class BooleanNetworkExperiment:
         rows = [row for _, row in df.iterrows()]
 
         success_count = 0
+        total = len(rows)
 
         if n_jobs == 1:
-            for row in rows:
+            for idx, row in enumerate(rows, 1):
                 if self._run_single_condition(row):
                     success_count += 1
+                if idx % progress_interval == 0:
+                    print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
         else:
             with mp.Pool(processes=n_jobs) as pool:
-                results = pool.map(self._run_single_condition, rows)
-                success_count = sum(results)
+                for idx, result in enumerate(pool.imap_unordered(self._run_single_condition, rows), 1):
+                    if result:
+                        success_count += 1
+                    if idx % progress_interval == 0:
+                        print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
 
-        print(f"\n[SUMMARY] Generated datasets: {success_count}/{len(rows)}")
+        # TODO COMMENTED: remove prints 
+        # print(f"\n[SUMMARY] Generated datasets: {success_count}/{len(rows)}")
 
         # merge all csv
         self._merge_csv()

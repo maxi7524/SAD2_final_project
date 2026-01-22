@@ -142,8 +142,8 @@ def simulate_trajectories_to_csv(
                 for trajectory in dataset_rows:
                     writer.writerows(trajectory)
                     writer.writerow([])  # linia przerwy
-
-            print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
+            # TODO COMMENTED: 
+            # print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
             return True, actual_ratio
 
 
@@ -165,7 +165,7 @@ def simulate_trajectories_to_csv(
             writer.writerows(trajectory)
             writer.writerow([])  # linia przerwy
 
-    print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
+    # print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
     return False, actual_ratio
 
 if __name__ == "__main__":
