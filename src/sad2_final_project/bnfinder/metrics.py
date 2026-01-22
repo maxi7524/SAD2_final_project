@@ -27,6 +27,7 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
             source = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", source)
             target = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", target)
             inferred_edge_set.add((source, target))
+    inferred_edge_set = set([(f'x{el_1[1]-1}', f'x{el_2[1]-1}') for el_1, el_2 in inferred_edges])
 
     def calculate_tp():
         return len(true_edge_set & inferred_edge_set)
