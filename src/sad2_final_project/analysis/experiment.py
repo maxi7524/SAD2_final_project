@@ -4,6 +4,7 @@ from pathlib import Path
 from itertools import product
 import shutil
 import pandas as pd
+import numpy as np
 import multiprocessing as mp
 from typing import Iterable, Literal, Optional
 # sad2 library
@@ -130,6 +131,31 @@ class BooleanNetworkExperiment:
     def show_paths(self) -> dict:
         """Return dictionary with all important paths."""
         return self.paths
+    
+    def normalize_sample(self, n: float, in_place: bool = True) -> pd.DataFrame | None:
+        """
+        Normalize number of trajectories based on trajectory length relative to network size.
+        
+        Formula: k = trajectory_length * n_trajectories / (num_nodes * n)
+        Returns normalized n_trajectories as ceil(n_trajectories / k).
+        
+        Args:
+            n: Coefficient multiplied by num_nodes
+            in_place: If True, modifies self.experiment_df in place. If False, returns modified copy.
+            
+        Returns:
+            None if in_place=True, otherwise returns modified DataFrame
+        """
+        # Vectorized calculation
+        k = (self.experiment_df["trajectory_length"] * self.experiment_df["n_trajectories"]) / (self.experiment_df["num_nodes"] * n)
+        normalized_values = np.ceil(self.experiment_df["n_trajectories"] / k).astype(int)
+        
+        if in_place:
+            self.experiment_df["n_trajectories"] = normalized_values
+        else:
+            df_copy = self.experiment_df.copy()
+            df_copy["n_trajectories"] = normalized_values
+            return df_copy
     
     # =========================
     # File management
