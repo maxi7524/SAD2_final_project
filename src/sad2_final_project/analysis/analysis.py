@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from typing import List
 
@@ -6,6 +7,13 @@ from typing import List
 # --------------------------------------------------
 # MAx
 # --------------------------------------------------
+
+
+# --------------------
+# Loading data
+# --------------------
+
+
 
 # CURRENT DATA
 def loader_current_data(metadata_path: Path | str, results_path: Path | str) -> pd.DataFrame:
@@ -74,6 +82,10 @@ def loader_obsolete_data(metadata_path: Path | str, results_path: Path | str) ->
     ### merge be outer join
     df = results_df.merge(metadata_df, how='outer', on='condition_id_num')
     return df
+
+# --------------------------------------------------
+# Updating data
+# --------------------------------------------------
 
 # TODO DONE - TO HELPERS
 def add_missing_metrics_from_experiment(
@@ -195,8 +207,156 @@ def add_missing_metrics_from_experiment(
         
     return df_result
 
+# TODO LIBRARY: add score functions to existing data
 
-# TODO - add function to add score functions to existing data 
+
+
+# --------------------
+# Analysis 2
+# --------------------
+
+# ----------------------------------------
+# ACF AND ESS analysis
+# ----------------------------------------
+
+def acf(x, max_lag):
+    """
+    Compute autocorrelation function up to max_lag.
+    
+    Parameters
+    ----------
+    x : array-like, shape (T,)
+        Time series.
+    max_lag : int
+        Maximum lag k.
+    
+    Returns
+    -------
+    acf_values : np.ndarray, shape (max_lag + 1,)
+        acf_values[k] = autocorrelation at lag k.
+        acf_values[0] = 1.
+    """
+    x = np.asarray(x)
+    T = len(x)
+    
+    x_mean = np.mean(x)
+    x_centered = x - x_mean
+    
+    denom = np.sum(x_centered ** 2)
+    if denom == 0:
+        raise ValueError("Zero variance time series.")
+    
+    acf_values = np.empty(max_lag + 1)
+    acf_values[0] = 1.0
+    
+    for k in range(1, max_lag + 1):
+        num = np.sum(
+            x_centered[k:] * x_centered[:-k]
+        )
+        acf_values[k] = num / denom
+    
+    return acf_values
+
+def effective_sample_size(x, max_lag=None):
+    """
+    Estimate effective sample size (ESS) of a time series.
+    
+    Parameters
+    ----------
+    x : array-like, shape (T,)
+        Time series.
+    max_lag : int or None
+        Maximum lag to consider. If None, defaults to T//2.
+    
+    Returns
+    -------
+    ess : float
+        Effective sample size.
+    """
+    x = np.asarray(x)
+    T = len(x)
+    
+    if max_lag is None:
+        max_lag = T // 2
+    
+    rho = acf(x, max_lag)
+    
+    # sum only positive autocorrelations
+    positive_rho = rho[1:][rho[1:] > 0]
+    
+    ess = T / (1 + 2 * np.sum(positive_rho))
+    
+    return ess
+
+def acf_and_ess_for_series(x, max_lag=None):
+    """
+    Compute ACF and ESS for a single time series.
+    
+    Returns
+    -------
+    result : dict
+        {
+            "ess": float,
+            "acf": np.ndarray
+        }
+    """
+    acf_values = acf(x, max_lag=max_lag)
+    ess_value = effective_sample_size(x, max_lag=max_lag)
+    
+    return {
+        "ess": ess_value,
+        "acf": acf_values
+    }
+
+def dataset_level_acf_and_ess(df, max_lag=None):
+    """
+    Compute dataset-level mean lag-1 ACF and mean ESS.
+    """
+    rho1_values = []
+    ess_values = []
+    
+    for col in df.columns:
+        x = df[col].values
+        
+        rho = acf(x, max_lag=1)
+        rho1_values.append(rho[1])
+        
+        ess = effective_sample_size(x, max_lag=max_lag)
+        ess_values.append(ess)
+    
+    return {
+        "mean_lag1_acf": float(np.mean(rho1_values)),
+        "mean_ess": float(np.mean(ess_values))
+    }
+
+def analyze_datasets_from_index(
+    meta_df,
+    index_column,
+    experiment_path,
+    max_lag=None
+):
+    records = []
+    
+    for _, row in meta_df.iterrows():
+        dataset_name = row[index_column]
+        
+        dataset_path = (
+            Path(experiment_path) / "datasets" / f"{dataset_name}.csv"
+        )
+        df = pd.read_csv(dataset_path)
+        
+        stats = dataset_level_acf_and_ess(df, max_lag=max_lag)
+        
+        records.append({
+            index_column: dataset_name,
+            "mean_lag1_acf": stats["mean_lag1_acf"],
+            "mean_ess": stats["mean_ess"]
+        })
+
+
+    
+    return meta_df.merge(pd.DataFrame(records), how='outer', on=index_column)
+
 
 
 
