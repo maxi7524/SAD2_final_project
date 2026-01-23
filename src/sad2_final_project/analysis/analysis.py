@@ -141,7 +141,7 @@ def add_missing_metrics_from_experiment(
 
     new_cols = cols[:idx+1] \
            + metrics_list \
-           + [c for c in cols if c not in metrics_list and c not in cols[:idx]]
+           + [c for c in cols if c not in metrics_list and c not in cols[:idx+1]]
 
     df_result = df_result[new_cols]
 
