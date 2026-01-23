@@ -37,7 +37,7 @@ class BooleanNetworkExperiment:
         n_trajectories: Iterable[int],
         sampling_frequency: Iterable[int],
         score_functions: Iterable[Literal["MDL", "BDE"]],
-        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
+        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD", "SHD", "EHD", "SID"],
         # TODO LIBRARY: add analysis part fo cost functions
         analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 
@@ -117,11 +117,13 @@ class BooleanNetworkExperiment:
         self.simulate_trajectories_to_csv_kwargs = simulate_trajectories_to_csv_kwargs
 
         # stable condition identifier
-        self.experiment_df["condition_id"] = (
-            self.experiment_df.index.astype(str).str.zfill(4)
+        self.experiment_df["condition_id_name"] = (
+            self.experiment_df.index.astype(str).str.zfill(5)
         )
-        self.experiment_df["success"] = False
-        self.experiment_df["attractor_ratio"] = np.nan
+        self.experiment_df["condition_id_num"] = (
+            self.experiment_df.index.astype(int)
+        )
+
 
     # =========================
     # INSPECTION
@@ -169,7 +171,7 @@ class BooleanNetworkExperiment:
         if csv_path is None:
             csv_path = self.paths['results'] / 'metadata.csv'
         # saving results
-        self.experiment_df.to_csv(csv_path)
+        self.experiment_df.to_csv(csv_path, index=False)
         pass
 
     def _merge_csv(self, csv_dir: str | Path = None) -> None:
@@ -217,7 +219,7 @@ class BooleanNetworkExperiment:
         This function is process-safe.
         """
 
-        cid = row["condition_id"]
+        cid = row["condition_id_name"]
 
         # ---------- paths ----------
         gt_path = self.paths["ground_truth"] / f"{cid}.csv"
@@ -261,14 +263,11 @@ class BooleanNetworkExperiment:
             ## model parameters
             score_functions=[row["score_function"]],
             ## analysis settings
-            analysis_metrics = self.analysis_metrics,
-            analysis_score_functions= self.analysis_score_functions,
-
+            analysis_metrics=self.analysis_metrics,
+            analysis_score_functions=self.analysis_score_functions,
+            dataset_succeeded=success,
+            attractor_ratio=ratio,
         )
-        df = pd.read_csv(metrics_path)
-        df["success"] = success
-        df["attractor_ratio"] = ratio
-        df.to_csv(metrics_path, index=False)
 
         return True
     # =========================
@@ -279,11 +278,13 @@ class BooleanNetworkExperiment:
         *,
         n_jobs: int = 1,
         subset: Optional[pd.DataFrame] = None,
+        progress_interval: int = 100,
     ):
         """
         Run experiment.
         - n_jobs = number of parallel processes
         - subset = optional subset of experiment_df
+        - progress_interval = print progress every N steps
         Returns: number of successful datasets
         """
 
@@ -294,21 +295,28 @@ class BooleanNetworkExperiment:
         rows = [row for _, row in df.iterrows()]
 
         success_count = 0
+        total = len(rows)
 
         if n_jobs == 1:
-            for row in rows:
+            for idx, row in enumerate(rows, 1):
                 if self._run_single_condition(row):
                     success_count += 1
+                if idx % progress_interval == 0:
+                    print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
         else:
             with mp.Pool(processes=n_jobs) as pool:
-                results = pool.map(self._run_single_condition, rows)
-                success_count = sum(results)
+                for idx, result in enumerate(pool.imap_unordered(self._run_single_condition, rows), 1):
+                    if result:
+                        success_count += 1
+                    if idx % progress_interval == 0:
+                        print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
 
-        print(f"\n[SUMMARY] Generated datasets: {success_count}/{len(rows)}")
+        # TODO COMMENTED: remove prints 
+        # print(f"\n[SUMMARY] Generated datasets: {success_count}/{len(rows)}")
 
         # merge all csv
         self._merge_csv()
         # obtain metadata
         self.save_experiment_df_to_csv()
         return success_count
-        
+
