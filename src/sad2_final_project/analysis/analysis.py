@@ -7,11 +7,75 @@ from typing import List
 # MAx
 # --------------------------------------------------
 
-# TODO - loader
+# CURRENT DATA
+def loader_current_data(metadata_path: Path | str, results_path: Path | str) -> pd.DataFrame:
+    '''
+    Loads data in obsolete format into one dataframe
+    '''
+    ## metadata
+    ### load metadata into df
+    metadata_df = pd.read_csv(
+        metadata_path, 
+        # set incorrectly read datatype (ref)
+        dtype={
+            "condition_id_name": str,
+        })
+    ## results
+    ### load results 
+    results_df = pd.read_csv(
+        results_path,
+        )
 
-# TODO - loader_obsolete 
+    ## merge 
+    ### remove duplicates
+    results_df = results_df.drop(columns=['score_function'])
+    ### merge be outer join
+    df = results_df.merge(metadata_df, how='outer', on='condition_id_num')
+    return df
 
-# TODO - add function to add metrics t- existing data
+# OBSOLETE DATA
+def loader_obsolete_data(metadata_path: Path | str, results_path: Path | str) -> pd.DataFrame:
+    '''
+    Loads data in obsolete format into one dataframe
+    '''
+    ## metadata
+    ### load metadata into df
+    metadata_df = pd.read_csv(
+        metadata_path, 
+        # del obsolete columns
+        usecols=lambda x: x not in ['Unnamed: 0', 'attractor_ratio', 'success'],
+        # set incorrectly read datatype (refe)
+        dtype={
+            "condition_id": str,
+        })
+    ### rename columns in meta data to obtain 
+    metadata_df['condition_id_name'] = metadata_df['condition_id']
+    metadata_df['condition_id_num'] = metadata_df['condition_id'].astype(int)
+    metadata_df = metadata_df.drop(columns=['condition_id'])
+
+    ## results
+    ### load results 
+    results_df = pd.read_csv(
+        results_path,
+        usecols = lambda x: x not in ["BIC"],
+        )
+    ### rename columns to match with meta data
+    results_df = results_df.rename(
+        columns={
+            "dataset": "condition_id_num",
+            "score": "score_function"
+        }
+    )
+    ### add missing values
+
+    ## merge 
+    ### remove duplicates
+    results_df = results_df.drop(columns=['score_function'])
+    ### merge be outer join
+    df = results_df.merge(metadata_df, how='outer', on='condition_id_num')
+    return df
+
+# TODO DONE - TO HELPERS
 def add_missing_metrics_from_experiment(
     df: pd.DataFrame,
     experiment_path: str | Path,
@@ -69,9 +133,17 @@ def add_missing_metrics_from_experiment(
     common_metrics = list(set(df.columns).intersection(set(metrics_list)))
     df_result = df_result.drop(columns=common_metrics)
     ### add metrics columns as dtype float
-    df_result[metrics_list] = pd.Series(dtype='float')
+    for col in metrics_list:
+        df_result[col] = pd.Series(dtype='float')
     ### move them to proper index 
+    cols = list(df_result.columns)
+    idx = cols.index(after_idx)
 
+    new_cols = cols[:idx+1] \
+           + metrics_list \
+           + [c for c in cols if c not in metrics_list and c not in cols[:idx]]
+
+    df_result = df_result[new_cols]
 
 
     # Process each row - calculate missing metrics
@@ -82,6 +154,7 @@ def add_missing_metrics_from_experiment(
         ## check file existance 
         gt_path = ground_truth_dir / f'{dataset_id}.csv'
         if not gt_path.exists():
+            print(gt_path)
             print(f"  [Warning] Ground truth not found for {dataset_id}")
             continue
         ## load true edges
@@ -107,7 +180,6 @@ def add_missing_metrics_from_experiment(
         # Calculate metrics - pass metrics_list so they're computed in correct order
         try:
             metrics = evaluate_results_metrics(true_edges, inferred_edges, metrics_list=metrics_list)
-            print(metrics)
             # Insert calculated metrics into existing columns
             for metric_name, metric_value in metrics.items():
                 if metric_name in df_result.columns:
@@ -116,7 +188,11 @@ def add_missing_metrics_from_experiment(
         except Exception as e:
             print(f"  [Error] Failed to calculate metrics for {dataset_id}: {e}")
             continue
-    
+            
+        if idx % 100:
+          total = df_result.shape[0]
+          print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
+        
     return df_result
 
 
