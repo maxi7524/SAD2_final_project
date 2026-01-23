@@ -3,8 +3,6 @@ import pandas as pd
 from pathlib import Path
 from typing import Iterable, Literal, Optional
 import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
-from sad2_final_project.bnfinder.score_functions import score_dag_from_sif
-from sad2_final_project.bnfinder.metrics import evaluate_results_metrics
 
 def _load_external_data(filepath):
     """
@@ -51,7 +49,7 @@ def _load_ground_truth(filepath):
         edges.add((parent, child))  # Parent, Child
     return edges
 
-def run_bnfinder(
+def manager_bnfinder(
     # paths
     dataset_path: Path | str, # dataset path for learning 
     ground_truth_path: Path | str | None = None, # ground truth for metrics
@@ -68,6 +66,10 @@ def run_bnfinder(
     dataset_succeeded: bool | None = None,
     attractor_ratio: float | None = None,
 ):
+    # Lazy imports to avoid circular import
+    from sad2_final_project.analysis.score_functions import score_dag_from_sif
+    from sad2_final_project.analysis.metrics import evaluate_results_metrics
+    
     # Paths managements
     dataset_path = Path(dataset_path)
     dataset_name = dataset_path.stem

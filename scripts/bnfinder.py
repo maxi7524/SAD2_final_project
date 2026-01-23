@@ -1,5 +1,5 @@
 import argparse
-from sad2_final_project.bnfinder.bnfinder import run_bnfinder
+from sad2_final_project.bnfinder.bnfinder import manager_bnfinder
 
 
 def parse_args():
@@ -14,7 +14,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    run_bnfinder(
+    manager_bnfinder(
         data=args.data,
         ground_truth=args.ground_truth,
         output_template="results/{dataset}_{score}.sif",

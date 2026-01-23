@@ -3,7 +3,7 @@ import pandas as pd
 from typing import Dict, List
 from scipy.special import gammaln
 import itertools
-from .bnfinder_wrapper import load_structure_from_sif
+from ..bnfinder.bnfinder_wrapper import load_structure_from_sif
 
 # --------------------------------------------------
 # Helpers

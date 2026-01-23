@@ -9,7 +9,7 @@ import multiprocessing as mp
 from typing import Iterable, Literal, Optional
 # sad2 library
 from sad2_final_project.boolean_bn import BN, simulate_trajectories_to_csv
-from sad2_final_project.bnfinder import run_bnfinder
+from sad2_final_project.bnfinder import manager_bnfinder
 
 
 
@@ -253,7 +253,7 @@ class BooleanNetworkExperiment:
         #     return False
 
         # ---------- 4. inference ----------
-        run_bnfinder(
+        manager_bnfinder(
             ## file paths
             dataset_path=dataset_path,
             ground_truth_path=gt_path,
