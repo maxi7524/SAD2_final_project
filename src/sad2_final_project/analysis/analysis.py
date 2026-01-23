@@ -209,6 +209,48 @@ from matplotlib import rcParams
 from matplotlib.ticker import MultipleLocator
 import seaborn as sns
 
+def plot_scatter(df, x, y, title):
+    """
+    Create a styled scatter plot.
+    
+    Parameters:
+    - df: pandas DataFrame
+    - x: column name for x-axis
+    - y: column name for y-axis
+    - title: plot title
+    """
+    fig, ax = plt.subplots(figsize=(10.5, 6))
+    
+    # Background color
+    ax.set_facecolor('#EAF4FB')
+    
+    # Titles and labels
+    ax.set_title(title, fontsize=24.7)
+    ax.set_xlabel(x, fontsize=20.8)
+    ax.set_ylabel(y, fontsize=20.8)
+    
+    
+    # Grid below points
+    ax.set_axisbelow(True)
+    ax.grid(True, which='major', color='#FFFFFF', linewidth=1)
+    ax.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
+    
+    # Scatter points
+    ax.scatter(
+        df[x],
+        df[y],
+        color='#2980B9',
+        alpha=0.1,
+        s=60
+    )
+    
+    # Remove spines
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    
+    plt.show()
+
+
 # ---------------------------
 # Global style
 # ---------------------------
@@ -309,3 +351,6 @@ def plot_histogram(df, x, title, bins=20):
         spine.set_visible(False)
     
     plt.show()
+
+    from matplotlib.ticker import MultipleLocator
+    import matplotlib.pyplot as plt
