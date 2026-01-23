@@ -120,9 +120,9 @@ def run_bnfinder(
                     ##### metrics
                     **metrics,
                     ##### cost functions
-                    "log_likelihood": 0.0,
-                    "BIC": 0.0,
-                    "MDL": 0.0,
+                    "log_likelihood": cost_functions.get("log_likelihood"),
+                    "MDL": cost_functions.get("MDL"),
+                    "BDe": cost_functions.get("BDe"),
                     # "n_parameters": 0,
                 }
                 rows.append(row)
