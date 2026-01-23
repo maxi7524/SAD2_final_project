@@ -3,10 +3,8 @@ import pandas as pd
 from pathlib import Path
 from typing import Iterable, Literal, Optional
 import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
-from sad2_final_project.bnfinder.score_functions import score_dag_from_sif
-from sad2_final_project.bnfinder.metrics import evaluate_results_metrics
 
-def _load_external_data(filepath):
+def load_external_data(filepath):
     """
     Loads data from a CSV file.
     Assumes rows = time steps, columns = gene names.
@@ -19,22 +17,22 @@ def _load_external_data(filepath):
     # print(f"   Loaded dataset with shape: {df.shape}")
     return df
 
-def _load_ground_truth(filepath):
-    """
-    Loads ground truth edges from a CSV for evaluation.
-    Expected format: Parent,Child
-    """
-    if not os.path.exists(filepath):
-        return None
+# def load_ground_truth(filepath):
+#     """
+#     Loads ground truth edges from a CSV for evaluation.
+#     Expected format: Parent,Child
+#     """
+#     if not os.path.exists(filepath):
+#         return None
     
-    print(f"-> Loading ground truth from: {filepath}")
-    edges = set()
-    df = pd.read_csv(filepath)
-    for _, row in df.iterrows():
-        edges.add((str(row[0]), str(row[1]))) # Parent, Child
-    return edges
+#     print(f"-> Loading ground truth from: {filepath}")
+#     edges = set()
+#     df = pd.read_csv(filepath)
+#     for _, row in df.iterrows():
+#         edges.add((str(row[0]), str(row[1]))) # Parent, Child
+#     return edges
 # TODO CHECK: was problem with parsing value to csv 
-def _load_ground_truth(filepath):
+def load_ground_truth(filepath):
     """
     Loads ground truth edges from a CSV for evaluation.
     Expected format: Parent,Child
@@ -51,7 +49,7 @@ def _load_ground_truth(filepath):
         edges.add((parent, child))  # Parent, Child
     return edges
 
-def run_bnfinder(
+def manager_bnfinder(
     # paths
     dataset_path: Path | str, # dataset path for learning 
     ground_truth_path: Path | str | None = None, # ground truth for metrics
@@ -68,13 +66,17 @@ def run_bnfinder(
     dataset_succeeded: bool | None = None,
     attractor_ratio: float | None = None,
 ):
+    # Lazy imports to avoid circular import
+    from sad2_final_project.analysis.score_functions import score_dag_from_sif
+    from sad2_final_project.analysis.metrics import evaluate_results_metrics
+    
     # Paths managements
     dataset_path = Path(dataset_path)
     dataset_name = dataset_path.stem
     # Data management
     ## 1. Load Data
     try:
-        df = _load_external_data(dataset_path)
+        df = load_external_data(dataset_path)
     except FileNotFoundError as e:
         print(e)
         exit(1)
@@ -84,7 +86,7 @@ def run_bnfinder(
     bnf.write_bnf_input(df, bnf_file_path)
 
     ## 3. Load Ground Truth (if available)
-    true_edges = _load_ground_truth(ground_truth_path)
+    true_edges = load_ground_truth(ground_truth_path)
 
     # Inference
     ## 4. Run Inference on given score functions (default = MDL & BDe)
@@ -120,9 +122,9 @@ def run_bnfinder(
                     ##### metrics
                     **metrics,
                     ##### cost functions
-                    "log_likelihood": 0.0,
-                    "BIC": 0.0,
-                    "MDL": 0.0,
+                    "log_likelihood": cost_functions.get("log_likelihood"),
+                    "MDL": cost_functions.get("MDL"),
+                    "BDe": cost_functions.get("BDe"),
                     # "n_parameters": 0,
                 }
                 rows.append(row)

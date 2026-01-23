@@ -62,9 +62,8 @@ def simulate_trajectories_to_csv(
                 # Write each trajectory, separated by an empty line
                 for trajectory in dataset_rows:
                     writer.writerows(trajectory)
-                    writer.writerow([]) 
-
-            print(f"Dataset saved to {output_file} (actual attractor ratio: {actual_ratio:.2f})")
+                    writer.writerow([])  
+    
             return True, actual_ratio
         
     # Save the dataset even if it does not meet the ratio criteria

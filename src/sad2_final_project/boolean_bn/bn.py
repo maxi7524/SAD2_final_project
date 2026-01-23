@@ -463,35 +463,84 @@ class BN():
 # Utility Functions
 # ============================================================
 
-def load_bnet_to_BN(file_path: str) -> BN:
+def load_bnet_to_BN(file_path: str):
     """
-    Parses a .bnet file and returns a BN object with functions converted to DNF.
+    Parses a .bnet file and returns a BN object.
+    Maps custom node names (e.g., v_AKT) to internal BN names (x0, x1...).
+    Variables appearing in expressions but not as targets are treated as Inputs (Identity functions).
     """
-    nodes = []
-    functions = []
-
     algebra = BooleanAlgebra()
 
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
+    # Dictionary to store raw expressions: { 'v_Node': 'expression_string' }
+    raw_expressions = {}
+    # Set to collect all unique symbols found in the file (Targets + Inputs)
+    all_symbols = set()
+
     with open(file_path, 'r') as f:
         for line in f:
             line = line.strip()
-
-            if not line or line.startswith('#') or line.lower().strip() == 'targets,factors':
+            # Skip empty lines, comments, and the header "targets,factors"
+            if not line or line.startswith('#') or line.lower().startswith('targets'):
                 continue
 
-            target, expression = [part.strip() for part in line.split(',', 1)]
-            parsed_expr = algebra.parse(expression)
-            dnf_expr = algebra.dnf(parsed_expr)
+            # Parse line: "Target, Expression"
+            if ',' in line:
+                target, expression = [part.strip() for part in line.split(',', 1)]
 
-            nodes.append(target)
-            functions.append(str(dnf_expr))
+                # Replace '!' with '~' because boolean.py uses '~' for NOT
+                expression = expression.replace('!', '~')
 
-    return BN(nodes, functions)
+                raw_expressions[target] = expression
+                all_symbols.add(target)
+
+    # Scan all expressions to find variables that are used but not defined as targets (Inputs)
+    for expr_str in raw_expressions.values():
+        try:
+            # Parse strictly to extract symbols
+            parsed = algebra.parse(expr_str)
+            for symbol in parsed.get_symbols():
+                all_symbols.add(str(symbol))
+        except Exception as e:
+            print(f"Error parsing expression: {expr_str}")
+            raise e
+
+    sorted_nodes = sorted(list(all_symbols))
+
+    node_mapping = {name: f"x{i}" for i, name in enumerate(sorted_nodes)}
+
+    print(f"Loaded {len(sorted_nodes)} nodes. Mapping:")
+    for name, internal in node_mapping.items():
+        print(f"  {internal}: {name}")
+
+    functions = []
+
+    for node_name in sorted_nodes:
+        if node_name in raw_expressions:
+            expr_obj = algebra.parse(raw_expressions[node_name])
+
+            subs_dict = {
+                algebra.Symbol(orig): algebra.Symbol(new_id)
+                for orig, new_id in node_mapping.items()
+            }
 
 
+            new_expr = expr_obj.subs(subs_dict)
+            functions.append(new_expr)
+
+        else:
+            # It is an Input (e.g., drugs like v_pertuzumab):
+            # Assign Identity function: f(x_i) = x_i
+            # This allows the variable to maintain its state (0 or 1) during simulation
+            x_symbol = algebra.Symbol(node_mapping[node_name])
+            functions.append(x_symbol)
+
+    # Return the BN object
+    # num_nodes must match the total count of unique symbols
+    print('eee')
+    return BN(num_nodes=len(sorted_nodes), mode='asynchronous', functions=functions)
 
 if __name__ == "__main__":
     algebra = BooleanAlgebra()
@@ -507,9 +556,8 @@ if __name__ == "__main__":
     functions = [f1, f2, f3]
 
 
-    tmp = load_bnet_to_BN("/Users/chmuradin/Desktop/tmp_sad/SAD2_final_project/model_id_37/model.bnet")
+    tmp = load_bnet_to_BN("/Users/chmuradin/Desktop/tmp_sad/SAD2_final_project/download_models/model_id_37/model.bnet")
 
     # Create BN with fixed functions
     #bn = BN(num_nodes=3, mode="asynchronous", functions=functions)
     print(tmp.functions)
-

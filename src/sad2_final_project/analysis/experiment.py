@@ -9,7 +9,7 @@ import multiprocessing as mp
 from typing import Iterable, Literal, Optional
 # sad2 library
 from sad2_final_project.boolean_bn import BN, simulate_trajectories_to_csv
-from sad2_final_project.bnfinder import run_bnfinder
+from sad2_final_project.bnfinder import manager_bnfinder
 
 
 
@@ -37,7 +37,7 @@ class BooleanNetworkExperiment:
         n_trajectories: Iterable[int],
         sampling_frequency: Iterable[int],
         score_functions: Iterable[Literal["MDL", "BDE"]],
-        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
+        analysis_metrics: Iterable[Literal["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"]]=["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD", "SHD", "EHD", "SID"],
         # TODO LIBRARY: add analysis part fo cost functions
         analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
 
@@ -117,11 +117,13 @@ class BooleanNetworkExperiment:
         self.simulate_trajectories_to_csv_kwargs = simulate_trajectories_to_csv_kwargs
 
         # stable condition identifier
-        self.experiment_df["condition_id"] = (
-            self.experiment_df.index.astype(str).str.zfill(4)
+        self.experiment_df["condition_id_name"] = (
+            self.experiment_df.index.astype(str).str.zfill(5)
         )
-        self.experiment_df["success"] = False
-        self.experiment_df["attractor_ratio"] = np.nan
+        self.experiment_df["condition_id_num"] = (
+            self.experiment_df.index.astype(int)
+        )
+
 
     # =========================
     # INSPECTION
@@ -169,7 +171,7 @@ class BooleanNetworkExperiment:
         if csv_path is None:
             csv_path = self.paths['results'] / 'metadata.csv'
         # saving results
-        self.experiment_df.to_csv(csv_path)
+        self.experiment_df.to_csv(csv_path, index=False)
         pass
 
     def _merge_csv(self, csv_dir: str | Path = None) -> None:
@@ -217,7 +219,7 @@ class BooleanNetworkExperiment:
         This function is process-safe.
         """
 
-        cid = row["condition_id"]
+        cid = row["condition_id_name"]
 
         # ---------- paths ----------
         gt_path = self.paths["ground_truth"] / f"{cid}.csv"
@@ -251,7 +253,7 @@ class BooleanNetworkExperiment:
         #     return False
 
         # ---------- 4. inference ----------
-        run_bnfinder(
+        manager_bnfinder(
             ## file paths
             dataset_path=dataset_path,
             ground_truth_path=gt_path,
