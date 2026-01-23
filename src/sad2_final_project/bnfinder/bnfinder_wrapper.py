@@ -61,7 +61,7 @@ def write_bnf_input(data_df, filename="experiment_data.txt"):
             values = data_df[gene].astype(str).tolist()
             f.write(f"{gene} " + " ".join(values) + "\n")
 
-    print(f"-> Data written to {filename}")
+    # print(f"-> Data written to {filename}")
 
 def run_bnfinder(input_file, output_sif, score="MDL"):
     """
@@ -86,7 +86,7 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
         "-v"
     ]
 
-    print(f"-> Running BNFinder with score: {score}...")
+    # print(f"-> Running BNFinder with score: {score}...")
     
     try:
         # Check=True raises an error if the return code is non-zero
@@ -103,7 +103,7 @@ def run_bnfinder(input_file, output_sif, score="MDL"):
                 stderr=subprocess.STDOUT,
                 text=True
             )
-        print(f"   Success! Output saved to {output_sif}")
+        # print(f"   Success! Output saved to {output_sif}")
          
 
         
@@ -165,7 +165,7 @@ def parse_sif_results(sif_file):
             if match:
                 parent, child = match.groups()
                 edges.append((parent, child))
-                print((parent, child))
+                # print((parent, child))
     
     return edges
 

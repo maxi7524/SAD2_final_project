@@ -14,9 +14,9 @@ def _load_external_data(filepath):
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"External data file not found: {filepath}")
     
-    print(f"-> Loading external data from: {filepath}")
+    # print(f"-> Loading external data from: {filepath}")
     df = pd.read_csv(filepath)
-    print(f"   Loaded dataset with shape: {df.shape}")
+    # print(f"   Loaded dataset with shape: {df.shape}")
     return df
 
 def _load_ground_truth(filepath):
@@ -42,7 +42,7 @@ def _load_ground_truth(filepath):
     if not os.path.exists(filepath):
         return None
     
-    print(f"-> Loading ground truth from: {filepath}")
+    # print(f"-> Loading ground truth from: {filepath}")
     edges = set()
     df = pd.read_csv(filepath)
     for _, row in df.iterrows():
@@ -88,7 +88,8 @@ def run_bnfinder(
 
     # Inference
     ## 4. Run Inference on given score functions (default = MDL & BDe)
-    print("\n=== STARTING INFERENCE ===")
+    # TODO COMMENTED: bnfinder
+    # print("\n=== STARTING INFERENCE ===")
     rows = []
     for score in score_functions:
         output_sif = Path(str(trained_model_name) + f'_{score}.sif')  #
@@ -100,12 +101,15 @@ def run_bnfinder(
             
             ### Parse output
             inferred_edges = bnf.parse_sif_results(output_sif)
-            print(f"[{score}] Inferred {len(inferred_edges)} edges.")
-            print("a")
+            # print(f"[{score}] Inferred {len(inferred_edges)} edges.")
+            # print("a")
             ### Metrics
+            #### Initialize default metrics
+            metrics = {metric: 0.0 for metric in analysis_metrics}
             #### case 0 - no edges:
             if len(inferred_edges) == 0:
-                print(f"[{score}] Empty graph — returning zero metrics")
+                # COMMENTED: 
+                # print(f"[{score}] Empty graph — returning zero metrics")
 
                 row = {
                     "dataset": dataset_name,
@@ -125,10 +129,10 @@ def run_bnfinder(
                 continue
             #### case 1 - edges
             if true_edges is not None:
-                print("   (Ground truth file found, evaluating metrics)")
+                # COMMENTED:
+                # print("   (Ground truth file found, evaluating metrics)")
                 #### Obtain metrics
                 metrics = evaluate_results_metrics(true_edges, inferred_edges, metrics_list=analysis_metrics)
-                print("b")
                 #### obtain cost function: 
                 cost_functions = score_dag_from_sif(dataset_df=df, sif_file_path=output_sif)
                 #### Sanity check
@@ -153,7 +157,9 @@ def run_bnfinder(
                 rows.append(row)
             #### case 3: no file
             else:
-                print("   (No ground truth file found, skipping evaluation)")
+                # COMMENTED: debugging
+                # print("   (No ground truth file found, skipping evaluation)")
+                pass
 
         except Exception as e:
             print(f"[{score}] Failed: {e}")
@@ -166,4 +172,4 @@ def run_bnfinder(
         else:
             df_out.to_csv(metrics_file, index=False)
 
-    print("\n=== DONE ===")
+    # print("\n=== DONE ===")
