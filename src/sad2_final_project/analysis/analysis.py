@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import List
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.ticker import MultipleLocator
 
 # --------------------------------------------------
 # MAx
@@ -383,78 +385,84 @@ category_colors = ['#C0392B', '#2980B9', '#27AE60', '#F4D03F', '#8E44AD']
 # Functions
 # ---------------------------
 
-def plot_boxplot(df, x, y, hue, title, palette=category_colors):
+def plot_boxplot(
+    df,
+    x,
+    y,
+    hue,
+    title,
+    palette,
+    ax=None,
+    show_legend=True
+):
     """
-    Create a styled boxplot for a given hue.
+    Create a styled boxplot and return fig, ax.
     
-    Parameters:
-    - df: pandas DataFrame
-    - x: column name for x-axis
-    - y: column name for y-axis
-    - hue: column name for grouping
-    - title: plot title
-    - palette: list of colors
+    If ax is provided, plot is drawn on it.
+    If not, a new figure and axis are created.
     """
-    fig, ax = plt.subplots(figsize=(13, 5))
-    
-    # Background color and grid below
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(13, 5))
+    else:
+        fig = ax.figure
+
+    # Background and grid
     ax.set_facecolor('#EAF4FB')
-    ax.set_axisbelow(True)
-    ax.xaxis.grid(True, which='major', color='#FFFFFF', linewidth=1)
-    ax.yaxis.grid(True, which='major', color='#FFFFFF', linewidth=1)
-    ax.xaxis.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
-    ax.yaxis.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
-    
-    # Remove spines
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    
-    # Boxplot
-    sns.boxplot(data=df, x=x, y=y, hue=hue, palette=palette, ax=ax)
-    
-    # Titles and labels
-    ax.set_title(title, fontsize=20)
-    ax.set_xlabel(x, fontsize=18)
-    ax.set_ylabel(y, fontsize=18)
-    ax.legend(title=hue, loc='center left', bbox_to_anchor=(1, 0.5))
-    
-    plt.show()
-
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-
-def plot_histogram(df, x, title, bins=20):
-    """
-    Create a styled histogram.
-    
-    Parameters:
-    - df: pandas DataFrame
-    - x: column name for x-axis
-    - title: plot title
-    - bins: number of bins
-    """
-    fig, ax = plt.subplots(figsize=(10.5, 6))
-    
-    # Background color
-    ax.set_facecolor('#EAF4FB')
-    
-    # Titles and labels
-    ax.set_title(title, fontsize=24.7)
-    ax.set_xlabel(x, fontsize=20.8)
-    ax.set_ylabel("Count", fontsize=20.8)
-    
-    # Ticks
-    ax.xaxis.set_major_locator(MultipleLocator(0.2))
-    ax.xaxis.set_minor_locator(MultipleLocator(0.05))
-    
-    # Grid below bars
     ax.set_axisbelow(True)
     ax.grid(True, which='major', color='#FFFFFF', linewidth=1)
     ax.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
-    
-    # Histogram bars
+
+    # Remove spines
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    # Boxplot
+    sns.boxplot(
+        data=df,
+        x=x,
+        y=y,
+        hue=hue,
+        palette=palette,
+        ax=ax
+    )
+
+    # Titles and labels
+    ax.set_title(title, fontsize=16)
+    ax.set_xlabel(x, fontsize=14)
+    ax.set_ylabel(y, fontsize=14)
+
+    if show_legend:
+        ax.legend(title=hue, loc='center left', bbox_to_anchor=(1, 0.5))
+    else:
+        ax.get_legend().remove()
+
+    return fig, ax
+
+
+
+
+
+def plot_histogram(
+    df,
+    x,
+    title,
+    bins=20,
+    ax=None
+):
+    """
+    Create a styled histogram and return fig, ax.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10.5, 6))
+    else:
+        fig = ax.figure
+
+    ax.set_facecolor('#EAF4FB')
+    ax.set_axisbelow(True)
+
+    ax.grid(True, which='major', color='#FFFFFF', linewidth=1)
+    ax.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
+
     ax.hist(
         df[x],
         bins=bins,
@@ -463,9 +471,14 @@ def plot_histogram(df, x, title, bins=20):
         edgecolor='white'
     )
 
-    
-    # Remove spines
+    ax.set_title(title, fontsize=18)
+    ax.set_xlabel(x, fontsize=14)
+    ax.set_ylabel("Count", fontsize=14)
+
+    ax.xaxis.set_major_locator(MultipleLocator(0.2))
+    ax.xaxis.set_minor_locator(MultipleLocator(0.05))
+
     for spine in ax.spines.values():
         spine.set_visible(False)
-    
-    plt.show()
+
+    return fig, ax
