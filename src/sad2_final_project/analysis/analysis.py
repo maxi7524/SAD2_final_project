@@ -80,7 +80,7 @@ def add_missing_metrics_from_experiment(
     df: pd.DataFrame,
     experiment_path: str | Path,
     metrics_list: List[str],
-    after_idx: int,
+    after_column: str,
 ) -> pd.DataFrame:
     """
     Takes a DataFrame with results, calculates missing metrics by loading ground truth
@@ -137,7 +137,7 @@ def add_missing_metrics_from_experiment(
         df_result[col] = pd.Series(dtype='float')
     ### move them to proper index 
     cols = list(df_result.columns)
-    idx = cols.index(after_idx)
+    idx = cols.index(after_column)
 
     new_cols = cols[:idx+1] \
            + metrics_list \
