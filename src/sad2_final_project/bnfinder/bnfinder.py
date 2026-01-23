@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable, Literal, Optional
 import sad2_final_project.bnfinder.bnfinder_wrapper as bnf
 
-def _load_external_data(filepath):
+def load_external_data(filepath):
     """
     Loads data from a CSV file.
     Assumes rows = time steps, columns = gene names.
@@ -17,22 +17,22 @@ def _load_external_data(filepath):
     # print(f"   Loaded dataset with shape: {df.shape}")
     return df
 
-def _load_ground_truth(filepath):
-    """
-    Loads ground truth edges from a CSV for evaluation.
-    Expected format: Parent,Child
-    """
-    if not os.path.exists(filepath):
-        return None
+# def load_ground_truth(filepath):
+#     """
+#     Loads ground truth edges from a CSV for evaluation.
+#     Expected format: Parent,Child
+#     """
+#     if not os.path.exists(filepath):
+#         return None
     
-    print(f"-> Loading ground truth from: {filepath}")
-    edges = set()
-    df = pd.read_csv(filepath)
-    for _, row in df.iterrows():
-        edges.add((str(row[0]), str(row[1]))) # Parent, Child
-    return edges
+#     print(f"-> Loading ground truth from: {filepath}")
+#     edges = set()
+#     df = pd.read_csv(filepath)
+#     for _, row in df.iterrows():
+#         edges.add((str(row[0]), str(row[1]))) # Parent, Child
+#     return edges
 # TODO CHECK: was problem with parsing value to csv 
-def _load_ground_truth(filepath):
+def load_ground_truth(filepath):
     """
     Loads ground truth edges from a CSV for evaluation.
     Expected format: Parent,Child
@@ -76,7 +76,7 @@ def manager_bnfinder(
     # Data management
     ## 1. Load Data
     try:
-        df = _load_external_data(dataset_path)
+        df = load_external_data(dataset_path)
     except FileNotFoundError as e:
         print(e)
         exit(1)
@@ -86,7 +86,7 @@ def manager_bnfinder(
     bnf.write_bnf_input(df, bnf_file_path)
 
     ## 3. Load Ground Truth (if available)
-    true_edges = _load_ground_truth(ground_truth_path)
+    true_edges = load_ground_truth(ground_truth_path)
 
     # Inference
     ## 4. Run Inference on given score functions (default = MDL & BDe)
