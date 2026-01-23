@@ -515,9 +515,32 @@ def load_bnet_to_BN(file_path: str):
     for name, internal in node_mapping.items():
         print(f"  {internal}: {name}")
 
-# ============================================================
-# Example usage
-# ============================================================
+    functions = []
+
+    for node_name in sorted_nodes:
+        if node_name in raw_expressions:
+            expr_obj = algebra.parse(raw_expressions[node_name])
+
+            subs_dict = {
+                algebra.Symbol(orig): algebra.Symbol(new_id)
+                for orig, new_id in node_mapping.items()
+            }
+
+
+            new_expr = expr_obj.subs(subs_dict)
+            functions.append(new_expr)
+
+        else:
+            # It is an Input (e.g., drugs like v_pertuzumab):
+            # Assign Identity function: f(x_i) = x_i
+            # This allows the variable to maintain its state (0 or 1) during simulation
+            x_symbol = algebra.Symbol(node_mapping[node_name])
+            functions.append(x_symbol)
+
+    # Return the BN object
+    # num_nodes must match the total count of unique symbols
+    print('eee')
+    return BN(num_nodes=len(sorted_nodes), mode='asynchronous', functions=functions)
 
 if __name__ == "__main__":
     algebra = BooleanAlgebra()
@@ -533,7 +556,7 @@ if __name__ == "__main__":
     functions = [f1, f2, f3]
 
 
-    tmp = load_bnet_to_BN("/Users/chmuradin/Desktop/tmp_sad/SAD2_final_project/model_id_37/model.bnet")
+    tmp = load_bnet_to_BN("/Users/chmuradin/Desktop/tmp_sad/SAD2_final_project/download_models/model_id_37/model.bnet")
 
     # Create BN with fixed functions
     #bn = BN(num_nodes=3, mode="asynchronous", functions=functions)
