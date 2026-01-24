@@ -978,3 +978,54 @@ def plot_histogram(
         spine.set_visible(False)
 
     return fig, ax
+
+
+
+def plot_scatter_subplots(df, x, y, title, color='#2980B9'):
+    """
+    Create side-by-side scatter plots for synchronous and asynchronous update modes.
+    
+    Parameters:
+    - df: pandas DataFrame
+    - x: column name for x-axis
+    - y: column name for y-axis
+    - title: main figure title
+    - color: color for all points
+    """
+    # Unique update modes
+    modes = ['synchronous', 'asynchronous']
+    
+    # Create figure with 2 subplots
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6), sharey=True)
+    fig.suptitle(title, fontsize=24)
+    
+    for ax, mode in zip(axes, modes):
+        # Filter dataframe for the update mode
+        df_mode = df[df['update_mode'] == mode]
+        
+        # Background color
+        ax.set_facecolor('#EAF4FB')
+        ax.set_axisbelow(True)
+        ax.grid(True, which='major', color='#FFFFFF', linewidth=1)
+        ax.grid(True, which='minor', color='#FFFFFF', linewidth=0.5)
+        
+        # Scatter plot without hue
+        ax.scatter(
+            df_mode[x],
+            df_mode[y],
+            color=color,
+            alpha=0.5,
+            s=60
+        )
+        
+        ax.set_title(f'{mode.capitalize()} updates', fontsize=18)
+        ax.set_xlabel(x, fontsize=16)
+        ax.set_ylabel(y, fontsize=16)
+        
+        # Remove spines
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+    
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
