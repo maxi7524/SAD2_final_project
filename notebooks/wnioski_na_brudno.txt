@@ -1,14 +1,28 @@
 
+Ogólne
+- że próbka jest znacząca bo mamy 240 / 480 połowa tego na synchroniczny asynchroniczny
 
 
 Do wykresów 1
-- co wstawić
-    - informacje dotyczące ilości próbek 
-
+- cel
+    - chcemy znaleźć czy istnieje ACF, oraz jak zmienia się ESS w celu określenia jak jak te cechy się zmieniają od sampling_frequency
+    - potem chcemy zobaczyć w jaki sposó miary jakości zmieniają się w zależności od paramteru sampling frequency, oraz szukamy czy istnieje jakaś zależność pomiedzy funkcjami optymalizacji a wynikami)
+    - 
 - synchroniczny update
     - widać wachania na średniej wartości ACF, ciężko określić w którą stronę
     - widzimy że ilość próbek niezależnych rośnie znacząc między 1 i 2 i miedzy 2 i 3, w czwartym jest pogorszenie, 5 wygląda dobrze, ale ma dużo outlierów, możemy podejrzewać żę wyniki są mniej stabilne
 - asynchroniczny update
     - widzimy że isotnie się zmniejsza śerdni ACF, 
-    - ESS nie zmienia się jednoznacznie 
+    - ESS nie zmienia się jednoznacznie, raczej rośnie w mniejszych próbach co powoduje żę zwiększając sampling frequency rośnie nam zależność 
+
+    następna analiza 3
+    - jak skaluje się score function z tymi miarami i jaki sampling jest najlepszy
+    - tutaj wybierzemy jaka wartość jest najbardziej optymalna w trenowaniu 
+
+    ostatnia analiza 4
+    - te score function ocenić w stosunku do ilości wierzchołkó 
+    - synchroniczny i asynchroniczny i jak wpływają na  ocene jakościową modelu
+    - wybrac miary do przypadku
+
+    potem etap drugi i czy potwierdzone są wyniki. 
     
