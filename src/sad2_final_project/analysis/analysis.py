@@ -1,10 +1,44 @@
+# data manipulation
 import pandas as pd
 import numpy as np
+# visualization
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+import matplotlib.patches as mpatches
+# data analysis
+from scipy.stats import wilcoxon, spearmanr
+# helpers
 from pathlib import Path
 from typing import List
-import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.ticker import MultipleLocator
+
+# ---------------------------
+# Global style
+# ---------------------------
+plt.rcParams['font.family'] = 'Liberation Serif'
+plt.rcParams['font.size'] = 16
+plt.rcParams['text.color'] = '#2C3E50'
+
+# example category colors
+category_colors = [
+    '#C0392B', 
+    '#2980B9', 
+    '#27AE60', 
+    '#F4D03F', 
+    '#8E44AD'
+    ]
+
+# TODO JOANNA: sprawdź czy lepiej ci nie pasują - widać wtedy skalowaność node'ów
+category_colors = [
+    "#e0d9e0",  # najmniejsze num_nodes
+    "#d3a6b3",
+    "#9b5f86",
+    "#5f3b66",
+    "#2b1e3a"   # największe num_nodes
+]
+
+
+
 
 # --------------------------------------------------
 # MAx
@@ -159,8 +193,9 @@ def add_missing_metrics_from_experiment(
 
     df_result = df_result[new_cols]
 
-
+    
     # Process each row - calculate missing metrics
+    _counter = 0
     for idx, row in df_result.iterrows():
         dataset_id = row.get('condition_id_name')
         
@@ -203,20 +238,22 @@ def add_missing_metrics_from_experiment(
             print(f"  [Error] Failed to calculate metrics for {dataset_id}: {e}")
             continue
             
-        if idx % 100:
-          total = df_result.shape[0]
-          print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
+        _counter += 1
+        if _counter % 1000 == 0:
+            total = df_result.shape[0]
+            print(f"[Progress] {_counter}/{total} conditions completed ({100*_counter/total:.1f}%)")
         
     return df_result
 
-# TODO LIBRARY: add score functions to existing data
 
+# TODO LIBRARY: add score functions to existing data
 
 
 # --------------------
 # Analysis 2
 # --------------------
 
+# TODO - to jest część analityczna (do przeniesienia)
 # ----------------------------------------
 # ACF AND ESS analysis
 # ----------------------------------------
@@ -339,6 +376,7 @@ def analyze_datasets_from_index(
 ):
     records = []
     
+    _counter = 0
     for idx, row in meta_df.iterrows():
         dataset_name = row[index_column]
         
@@ -355,24 +393,448 @@ def analyze_datasets_from_index(
             "mean_ess": stats["mean_ess"]
         })
 
-        if idx % 100:
+        _counter += 1
+        if _counter % 1000:
           total = meta_df.shape[0]
-          print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
+          print(f"[Progress] {_counter}/{total} conditions completed ({100*_counter/total:.1f}%)")
 
     
     return meta_df.merge(pd.DataFrame(records), how='outer', on=index_column)
 
+# ----------------------------------------
+# Statistical functions - basic functions
+# ----------------------------------------
 
+
+def signif_stars(p):
+    if p < 0.001:
+        return "***"
+    elif p < 0.01:
+        return "**"
+    elif p < 0.05:
+        return "*"
+    else:
+        return ""
+
+def paired_wilcoxon(
+    df,
+    metric,
+    sf_from,
+    sf_to,
+    id_cols=("rep_id", "num_nodes", "update_mode", "score_function"),
+    sf_col="sampling_frequency",
+    alternative="greater"
+):
+    """
+    Parowany test Wilcoxona: sf_to vs sf_from
+    H1 (domyślnie): sf_to < sf_from  (im mniejsza metryka, tym lepiej)
+    """
+
+    df1 = df[df[sf_col] == sf_from]
+    df2 = df[df[sf_col] == sf_to]
+
+    merged = df1.merge(
+        df2,
+        on=list(id_cols),
+        suffixes=(f"_{sf_from}", f"_{sf_to}")
+    )
+
+    if len(merged) < 10:
+        return None
+
+    x = merged[f"{metric}_{sf_from}"]
+    y = merged[f"{metric}_{sf_to}"]
+
+    stat, p = wilcoxon(
+        x - y,
+        alternative=alternative
+    )
+
+    return {
+        "metric": metric,
+        "sf_from": sf_from,
+        "sf_to": sf_to,
+        "transition": f"{sf_from}→{sf_to}",
+        "n_pairs": len(merged),
+        "wilcoxon_stat": stat,
+        "p_value": p,
+        "median_diff": np.median(y - x)
+    }
+
+def spearman_analysis(df, metric, x_col="mean_ess"):
+    """
+    Spearman correlation between ESS and metric.
+    """
+    rho, p = spearmanr(df[x_col], df[metric])
+    return rho, p
+
+# ----------------------------------------
+# Statistical functions - getting grouped table
+# ----------------------------------------
+
+def compute_wilcoxon_table(
+    df,
+    metrics,
+    transitions,
+    group_cols=("update_mode", "score_function"),
+    sf_col="sampling_frequency"
+):
+    """
+    Liczy wszystkie testy Wilcoxona i zwraca DataFrame.
+    """
+
+    results = []
+
+    for group_vals, df_sub in df.groupby(list(group_cols)):
+        group_dict = dict(zip(group_cols, group_vals))
+
+        for metric in metrics:
+            for sf_from, sf_to in transitions:
+
+                res = paired_wilcoxon(
+                    df_sub,
+                    metric=metric,
+                    sf_from=sf_from,
+                    sf_to=sf_to,
+                    sf_col=sf_col
+                )
+
+                if res is not None:
+                    res.update(group_dict)
+                    results.append(res)
+
+    return pd.DataFrame(results)
+
+def compute_spearman_table(
+    df,
+    metrics,
+    group_cols=("update_mode", "score_function", "num_nodes"),
+    ess_col="mean_ess"
+):
+    """
+    Liczy korelacje Spearmana ESS vs metryka.
+    """
+
+    rows = []
+
+    for group_vals, df_sub in df.groupby(list(group_cols)):
+        group_dict = dict(zip(group_cols, group_vals))
+
+        for metric in metrics:
+            rho, p = spearman_analysis(df_sub, metric, x_col=ess_col)
+            rows.append({
+                **group_dict,
+                "metric": metric,
+                "spearman_rho": rho,
+                "p_value": p
+            })
+
+    return pd.DataFrame(rows)
+
+
+# TODO - to jest część od wizualizacji
+# ----------------------------------------
+# Plots 
+# ----------------------------------------
+
+def plot_grouped_boxplots(
+    df,
+    *,
+    group_col,              # osobne figury, np. (update_mode)
+    x_col,                  # wartość na osi X, np. "sampling_frequency"
+    y_cols,                 # wartośc na si Y, np. ["AHD", "SID"] albo ["mean_lag1_acf", "mean_ess"]
+    hue_col,                # jakie kategoryzuje, np. "num_nodes"
+    hue_palette,            # odcień kategorii 
+    facet_col=category_colors,         # zmienne panelowe, np. "score_function"
+    facet_levels=None,      # kolejność paneli np. ["MDL", "BDE"]
+    main_title="",          # tytuł całej figury
+    group_title_fmt="",     # np. "Update mode = {}"
+    share_y_per_metric=True,
+    figsize=(15, 5),
+    padding_frac=0.05
+):
+    """
+    Uniwersalna funkcja do rysowania zestawów boxplotów z pełną parametryzacją.
+    """
+
+    plt.rcParams["font.family"] = "Liberation Serif"
+
+    hue_levels = sorted(df[hue_col].unique())
+
+    # ============================================================
+    # GLOBALNE ZAKRESY Y (dla każdej metryki osobno)
+    # ============================================================
+    global_y_ranges = {}
+    for y in y_cols:
+        ymin, ymax = df[y].min(), df[y].max()
+        pad = padding_frac * (ymax - ymin)
+        global_y_ranges[y] = (ymin - pad, ymax + pad)
+
+    # ============================================================
+    # GŁÓWNA PĘTLA PO GRUPACH (np. update_mode)
+    # ============================================================
+    if group_col is None:
+        group_values = [None]
+    else:
+        group_values = df[group_col].unique()
+
+    for group_val in group_values:
+
+        if group_col is None:
+            df_group = df
+        else:
+            df_group = df[df[group_col] == group_val]
+
+
+        for y in y_cols:
+
+            # ===== liczba subplotów =====
+            n_facets = len(facet_levels) if facet_col else 1
+
+            fig, axes = plt.subplots(
+                1,
+                n_facets,
+                figsize=figsize,
+                sharey=share_y_per_metric
+            )
+
+            if n_facets == 1:
+                axes = [axes]
+
+            # ====================================================
+            # RYSOWANIE POSZCZEGÓLNYCH PANELI
+            # ====================================================
+            for ax, facet_val in zip(axes, facet_levels or [None]):
+
+                if facet_col:
+                    df_plot = df_group[df_group[facet_col] == facet_val]
+                    title = f"{y} vs {x_col}, {facet_col} = {facet_val}"
+                else:
+                    df_plot = df_group
+                    title = f"{y} vs {x_col}"
+
+                plot_boxplot(
+                    df=df_plot,
+                    x=x_col,
+                    y=y,
+                    hue=hue_col,
+                    palette=hue_palette,
+                    title=title,
+                    ax=ax,
+                    show_legend=False
+                )
+
+                ax.set_ylim(*global_y_ranges[y])
+                ax.set_xlabel(x_col)
+                ax.set_ylabel(y)
+
+            # ====================================================
+            # LEGENDA (jedna na całą figurę)
+            # ====================================================
+            handles = [
+                mpatches.Patch(color=hue_palette[i], label=str(hue_levels[i]))
+                for i in range(len(hue_levels))
+            ]
+
+            fig.legend(
+                handles=handles,
+                title=hue_col,
+                loc="upper center",
+                bbox_to_anchor=(0.5, 1.02),
+                ncol=len(hue_levels),
+                frameon=False
+            )
+
+            # ====================================================
+            # TYTUŁY
+            # ====================================================
+            if group_col is None:
+                full_title = main_title
+            else:
+                full_title = f"{main_title}\n{group_title_fmt.format(group_val)}"
+
+            
+            fig.suptitle(full_title, fontsize=18, y=1.12)
+
+
+            fig.subplots_adjust(
+                top=0.78,
+                wspace=0.25
+            )
+
+            plt.show()
+
+# ----------------------------------------
+# Plots - statistical
+# ----------------------------------------
+
+## basic function
+def plot_stat_heatmap(
+    df,
+    *,
+    value_col,
+    p_col,
+    index_col,
+    column_col,
+    index_order=None,
+    vmin=None,
+    vmax=None,
+    center=None,
+    cmap="coolwarm",
+    value_fmt="{:.2f}",
+    signif_func=None,
+    figsize=(6, 5),
+    ax=None,
+    cbar=True,
+    cbar_label=None,
+    title=None,
+    xlabel=None,
+    ylabel=None
+):
+    """
+    Uniwersalna funkcja do rysowania heatmap statystycznych
+    (Wilcoxon, Spearman, cokolwiek z value + p-value).
+    """
+
+    pivot_val = df.pivot_table(
+        index=index_col,
+        columns=column_col,
+        values=value_col
+    )
+
+    pivot_p = df.pivot_table(
+        index=index_col,
+        columns=column_col,
+        values=p_col
+    )
+
+    if index_order is not None:
+        pivot_val = pivot_val.reindex(index_order)
+        pivot_p = pivot_p.reindex(index_order)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.figure
+
+    sns.heatmap(
+        pivot_val,
+        ax=ax,
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+        center=center,
+        linewidths=0.5,
+        linecolor="white",
+        annot=False,
+        cbar=cbar,
+        cbar_kws={"label": cbar_label} if cbar_label else None
+    )
+
+    # ===== ADNOTACJE =====
+    for y, idx in enumerate(pivot_val.index):
+        for x, col in enumerate(pivot_val.columns):
+            val = pivot_val.loc[idx, col]
+            p = pivot_p.loc[idx, col]
+
+            if pd.notna(val):
+                stars = signif_func(p) if signif_func else ""
+                label = value_fmt.format(val) + stars
+
+                ax.text(
+                    x + 0.5,
+                    y + 0.5,
+                    label,
+                    ha="center",
+                    va="center",
+                    fontsize=12,
+                    color="black"
+                )
+
+    if title:
+        ax.set_title(title, fontsize=14)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+
+    ax.tick_params(axis="both", which="both", length=0)
+
+    return fig, ax
+
+## wilcoxon aggregation
+def plot_wilcoxon_heatmap(
+    df,
+    *,
+    metric,
+    update_mode,
+    transitions_order,
+    ax=None,
+    cbar=True
+):
+    df_sub = df[
+        (df["metric"] == metric) &
+        (df["update_mode"] == update_mode)
+    ]
+
+    return plot_stat_heatmap(
+        df_sub,
+        value_col="median_diff",
+        p_col="p_value",
+        index_col="transition",
+        column_col="score_function",
+        index_order=transitions_order,
+        center=0,
+        cmap="coolwarm",
+        value_fmt="{:.2f}",
+        signif_func=signif_stars,
+        cbar=cbar,
+        cbar_label="Median difference (lower = improvement)",
+        title=metric,
+        xlabel="Score function",
+        ylabel="Sampling frequency transition",
+        ax=ax
+    )
+## spearman aggregation
+def plot_spearman_heatmap(
+    df,
+    *,
+    metric,
+    update_mode,
+    num_nodes_order,
+    ax=None,
+    cbar=True
+):
+    df_sub = df[
+        (df["metric"] == metric) &
+        (df["update_mode"] == update_mode)
+    ]
+
+    return plot_stat_heatmap(
+        df_sub,
+        value_col="spearman_rho",
+        p_col="p_value",
+        index_col="num_nodes",
+        column_col="score_function",
+        index_order=num_nodes_order,
+        vmin=-1,
+        vmax=1,
+        center=0,
+        cmap="coolwarm",
+        value_fmt="{:.2f}",
+        signif_func=signif_stars,
+        cbar=cbar,
+        cbar_label="Spearman ρ",
+        title=metric,
+        xlabel="Score function",
+        ylabel="Number of nodes",
+        ax=ax
+    )
 
 
 # --------------------------------------------------
 # Joanna
 # --------------------------------------------------
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-from matplotlib.ticker import MultipleLocator
-import seaborn as sns
 
 def plot_scatter(df, x, y, title):
     """
@@ -414,17 +876,6 @@ def plot_scatter(df, x, y, title):
         spine.set_visible(False)
     
     plt.show()
-
-
-# ---------------------------
-# Global style
-# ---------------------------
-rcParams['font.family'] = 'Liberation Serif'
-rcParams['font.size'] = 16
-rcParams['text.color'] = '#2C3E50'
-
-# example category colors
-category_colors = ['#C0392B', '#2980B9', '#27AE60', '#F4D03F', '#8E44AD']
 
 # ---------------------------
 # Functions
