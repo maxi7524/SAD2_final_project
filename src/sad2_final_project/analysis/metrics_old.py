@@ -1,36 +1,6 @@
 import re
-from pysptools.distance import SID
 
 def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
-    def calculate_tn(tp, fp, fn, total_possible):
-        # TN = total_possible - TP - FP - FN
-        return total_possible - tp - fp - fn
-
-    def calculate_accuracy(tp, tn, fp, fn):
-        return (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0.0
-
-    def calculate_f1(tp, fp, fn):
-        precision = calculate_precision(tp, fp)
-        recall = calculate_recall(tp, fn)
-        return 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    # For accuracy and TN, need total possible edges
-    all_nodes = set()
-    for edge in true_edge_set.union(inferred_edge_set):
-        all_nodes.update(edge)
-    n = len(all_nodes)
-    total_possible_edges = n * (n - 1)
-    if 'accuracy' in metrics_list:
-        TP = metric_values.get('TP', calculate_tp())
-        FP = metric_values.get('FP', calculate_fp())
-        FN = metric_values.get('FN', calculate_fn())
-        TN = calculate_tn(TP, FP, FN, total_possible_edges)
-        metric_values['accuracy'] = calculate_accuracy(TP, TN, FP, FN)
-    if 'f1' in metrics_list or 'f1_score' in metrics_list:
-        TP = metric_values.get('TP', calculate_tp())
-        FP = metric_values.get('FP', calculate_fp())
-        FN = metric_values.get('FN', calculate_fn())
-        metric_values['f1'] = calculate_f1(TP, FP, FN)
-        metric_values['f1_score'] = metric_values['f1']
     """
     Evaluate the inferred edges against the true edges and compute various metrics.
 
@@ -108,8 +78,11 @@ def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
         return len(undir_true_edges.symmetric_difference(undir_inferred_edges))
 
     def calculate_sid():
-        sid = SID(true_edges, inferred_edges)
-        return sid
+        directed_differences = 0
+        for edge in inferred_edges:
+            if edge[::-1] in true_edges and edge not in true_edges:
+                directed_differences += 1
+        return directed_differences
 
     # Compute metrics conditionally
     metric_values = {}

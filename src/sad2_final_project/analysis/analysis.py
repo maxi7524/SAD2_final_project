@@ -339,7 +339,7 @@ def analyze_datasets_from_index(
 ):
     records = []
     
-    for _, row in meta_df.iterrows():
+    for idx, row in meta_df.iterrows():
         dataset_name = row[index_column]
         
         dataset_path = (
@@ -355,6 +355,9 @@ def analyze_datasets_from_index(
             "mean_ess": stats["mean_ess"]
         })
 
+        if idx % 100:
+          total = meta_df.shape[0]
+          print(f"[Progress] {idx}/{total} conditions completed ({100*idx/total:.1f}%)")
 
     
     return meta_df.merge(pd.DataFrame(records), how='outer', on=index_column)
@@ -433,7 +436,7 @@ def plot_boxplot(
     y,
     hue,
     title,
-    palette,
+    palette=category_colors,
     ax=None,
     show_legend=True
 ):

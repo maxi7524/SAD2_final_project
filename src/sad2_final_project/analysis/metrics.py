@@ -1,127 +1,143 @@
 import re
+import numpy as np
+from pysptools.distance import SID
 
 def evaluate_results_metrics(true_edges, inferred_edges, metrics_list):
     """
     Evaluate the inferred edges against the true edges and compute various metrics.
 
     Parameters:
-    - true_edges: Set of tuples representing the true edges in the format (source, target).
-    - inferred_edges: Set of tuples representing the inferred edges in the format (source, target).
-    - metrics_list: List of metrics to compute. Options include 'TP', 'FP', 'FN', 'precision', 'recall', 'sensitivity', 'AHD', 'SHD', 'EHD', 'SID'.
+    - true_edges: List or Set of tuples representing the true edges (source, target).
+    - inferred_edges: List or Set of tuples representing the inferred edges.
+    - metrics_list: List of strings representing metrics to compute.
+      Options: 'TP', 'FP', 'FN', 'TN', 'precision', 'recall', 'sensitivity', 
+      'f1', 'accuracy', 'AHD', 'SHD', 'EHD', 'SID'.
 
     Returns:
     - A dictionary containing the computed metrics in the same order as metrics_list.
     """
-    # Convert edges to sets for easier computation
+
+    # --- 1. Helper Function for Node Normalization ---
+    def map_to_x_format(node):
+        """Maps 'G1', 'G2'... to 'x0', 'x1'... if necessary."""
+        if isinstance(node, str) and node.startswith('G') and node[1:].isdigit():
+            return f'x{int(node[1:]) - 1}'
+        return node
+
+    # --- 2. Data Preparation ---
+    # Convert input edges to sets for efficient set operations
     true_edge_set = set(true_edges)
-
-    # Parse inferred edges to match the format of true edges
-    inferred_edge_set = set()
-    # for edge in inferred_edges:
-    #     #print("edge:", edge)
-    #     # Extract nodes from the format 'G<int a> -> G<int b>' and map 'Gn' to 'x{n-1}'
-    #     ###### zmiana bo split sie wywalał
-    #     # print("start split")
-    #     # parts = edge.split(" -> ")
-    #     # print("stop split")
-    #     ####### czy to zawsze będzie 3?
-    #     if len(edge) == 3:
-    #         source = edge[0].strip()
-    #         target = edge[1].strip()
-    #         # Replace 'Gn' with 'x{n-1}'
-    #         source = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", source)
-    #         target = re.sub(r'G(\d+)', lambda m: f"x{int(m.group(1)) - 1}", target)
-    #         inferred_edge_set.add((source, target))
-    inferred_edge_set = set([(f'x{int(el_1[1])-1}', f'x{int(el_2[1])-1}') for el_1, el_2 in inferred_edges])
-
-    def calculate_tp():
-        return len(true_edge_set & inferred_edge_set)
-
-    def calculate_fp():
-        return len(inferred_edge_set - true_edge_set)
-
-    def calculate_fn():
-        return len(true_edge_set - inferred_edge_set)
-
-    def calculate_precision(tp, fp):
-        return tp / (tp + fp) if (tp + fp) > 0 else 0.0
-
-    def calculate_recall(tp, fn):
-        return tp / (tp + fn) if (tp + fn) > 0 else 0.0
-
-    def calculate_sensitivity(recall):
-        return recall  # Sensitivity is equivalent to recall
-
-    ####### true_edges + inferred_edges tu sie wywalało że jeden to set drugi list
-    # def calculate_ahd(fp, fn):
-    #     all_nodes = set()
-    #     for edge in true_edges + inferred_edges:
-    #         all_nodes.update(edge)
-    #     n = len(all_nodes)
-    #     total_possible_edges = n * (n - 1)
-    #     return (fp + fn) / total_possible_edges if total_possible_edges > 0 else 0.0
     
-    def calculate_ahd(fp, fn):
-        all_nodes = set()
-        for edge in true_edge_set.union(inferred_edge_set):
-            all_nodes.update(edge)
-        n = len(all_nodes)
-        total_possible_edges = n * (n - 1)
-        return (fp + fn) / total_possible_edges if total_possible_edges > 0 else 0.0
+    # Normalize inferred edges and convert to set
+    inferred_edges_normalized = [
+        (map_to_x_format(u), map_to_x_format(v)) for u, v in inferred_edges
+    ]
+    inferred_edge_set = set(inferred_edges_normalized)
 
-    def calculate_shd(fp, fn):
-        return fp + fn
+    # --- 3. Base Metrics Calculation (Counts) ---
+    # Intersection = True Positives
+    tp_count = len(true_edge_set & inferred_edge_set)
+    # In inferred but not in true = False Positives
+    fp_count = len(inferred_edge_set - true_edge_set)
+    # In true but not in inferred = False Negatives
+    fn_count = len(true_edge_set - inferred_edge_set)
 
-    def calculate_ehd():
-        undir_true_edges = set(frozenset(edge) for edge in true_edges)
-        undir_inferred_edges = set(frozenset(edge) for edge in inferred_edges)
-        return len(undir_true_edges.symmetric_difference(undir_inferred_edges))
+    # Determine total nodes to calculate TN and total possible edges
+    all_nodes = set()
+    for edge in true_edge_set.union(inferred_edge_set):
+        all_nodes.update(edge)
+    
+    n_nodes = len(all_nodes)
+    total_possible_edges = n_nodes * (n_nodes - 1)
+    
+    # True Negatives
+    tn_count = total_possible_edges - tp_count - fp_count - fn_count
 
-    def calculate_sid():
-        directed_differences = 0
-        for edge in inferred_edges:
-            if edge[::-1] in true_edges and edge not in true_edges:
-                directed_differences += 1
-        return directed_differences
+    # --- 4. Metrics Computation ---
+    results = {}
 
-    # Compute metrics conditionally
-    metric_values = {}
+    # We iterate through the requested metrics to ensure the output order matches input
+    for metric in metrics_list:
+        if metric == 'TP':
+            results['TP'] = tp_count
+        
+        elif metric == 'FP':
+            results['FP'] = fp_count
+        
+        elif metric == 'FN':
+            results['FN'] = fn_count
+        
+        elif metric == 'TN':
+            results['TN'] = tn_count
 
-    # TODO LIBRARY: write some function that wraps it up 
-    if 'TP' in metrics_list:
-        metric_values['TP'] = calculate_tp()
-    if 'FP' in metrics_list:
-        metric_values['FP'] = calculate_fp()
-    if 'FN' in metrics_list:
-        metric_values['FN'] = calculate_fn()
-    if 'precision' in metrics_list:
-        TP = metric_values.get('TP', calculate_tp())
-        FP = metric_values.get('FP', calculate_fp())
-        metric_values['precision'] = calculate_precision(TP, FP)
-    if 'recall' in metrics_list:
-        TP = metric_values.get('TP', calculate_tp())
-        FN = metric_values.get('FN', calculate_fn())
-        metric_values['recall'] = calculate_recall(TP, FN)
-    if 'sensitivity' in metrics_list:
-        recall = metric_values.get('recall', calculate_recall(
-            metric_values.get('TP', calculate_tp()),
-            metric_values.get('FN', calculate_fn())
-        ))
-        metric_values['sensitivity'] = calculate_sensitivity(recall)
-    if 'AHD' in metrics_list:
-        FP = metric_values.get('FP', calculate_fp())
-        FN = metric_values.get('FN', calculate_fn())
-        metric_values['AHD'] = calculate_ahd(FP, FN)
-    if 'SHD' in metrics_list:
-        FP = metric_values.get('FP', calculate_fp())
-        FN = metric_values.get('FN', calculate_fn())
-        metric_values['SHD'] = calculate_shd(FP, FN)
-    if 'EHD' in metrics_list:
-        metric_values['EHD'] = calculate_ehd()
-    if 'SID' in metrics_list:
-        metric_values['SID'] = calculate_sid()
+        elif metric == 'precision':
+            # Precision = TP / (TP + FP)
+            denominator = tp_count + fp_count
+            results['precision'] = tp_count / denominator if denominator > 0 else 0.0
 
-    # Prepare results dictionary in the same order as metrics_list
-    results = {metric: metric_values[metric] for metric in metrics_list if metric in metric_values}
+        elif metric in ['recall', 'sensitivity']:
+            # Recall = TP / (TP + FN)
+            denominator = tp_count + fn_count
+            val = tp_count / denominator if denominator > 0 else 0.0
+            results[metric] = val
+
+        elif metric in ['f1', 'f1_score']:
+            # F1 = 2 * (Precision * Recall) / (Precision + Recall)
+            prec_denom = tp_count + fp_count
+            rec_denom = tp_count + fn_count
+            
+            p = tp_count / prec_denom if prec_denom > 0 else 0.0
+            r = tp_count / rec_denom if rec_denom > 0 else 0.0
+            
+            results[metric] = (2 * p * r / (p + r)) if (p + r) > 0 else 0.0
+
+        elif metric == 'accuracy':
+            # Accuracy = (TP + TN) / Total
+            total = tp_count + tn_count + fp_count + fn_count
+            results['accuracy'] = (tp_count + tn_count) / total if total > 0 else 0.0
+
+        elif metric == 'SHD':
+            # Structural Hamming Distance = FP + FN
+            results['SHD'] = fp_count + fn_count
+
+        elif metric == 'AHD':
+            # Average Hamming Distance = (FP + FN) / Total Possible
+            results['AHD'] = (fp_count + fn_count) / total_possible_edges if total_possible_edges > 0 else 0.0
+
+        elif metric == 'EHD':
+            # Edge Hamming Distance (uses undirected/frozen sets to ignore direction)
+            undir_true = set(frozenset(edge) for edge in true_edge_set)
+            undir_inferred = set(frozenset(edge) for edge in inferred_edge_set)
+            results['EHD'] = len(undir_true.symmetric_difference(undir_inferred))
+
+        elif metric == 'SID':
+            # Structural Intervention Distance
+            try:
+                # SID requires adjacency matrices, not edge lists.
+                # Create a consistent node mapping for matrix indices
+                sorted_nodes = sorted(list(all_nodes))
+                node_map = {node: i for i, node in enumerate(sorted_nodes)}
+                dim = len(sorted_nodes)
+
+                # Initialize adjacency matrices
+                true_matrix = np.zeros((dim, dim))
+                inferred_matrix = np.zeros((dim, dim))
+
+                # Populate matrices
+                for u, v in true_edge_set:
+                    if u in node_map and v in node_map:
+                        true_matrix[node_map[u], node_map[v]] = 1
+
+                for u, v in inferred_edge_set:
+                    if u in node_map and v in node_map:
+                        inferred_matrix[node_map[u], node_map[v]] = 1
+
+                # Calculate SID using the matrices
+                sid_value = SID(true_matrix, inferred_matrix)
+                results['SID'] = sid_value
+            except Exception as e:
+                # Fallback or error logging if SID calculation fails
+                print(f"Error calculating SID: {e}")
+                results['SID'] = None
 
     return results

@@ -1,0 +1,14 @@
+
+
+
+Do wykresów 1
+- co wstawić
+    - informacje dotyczące ilości próbek 
+
+- synchroniczny update
+    - widać wachania na średniej wartości ACF, ciężko określić w którą stronę
+    - widzimy że ilość próbek niezależnych rośnie znacząc między 1 i 2 i miedzy 2 i 3, w czwartym jest pogorszenie, 5 wygląda dobrze, ale ma dużo outlierów, możemy podejrzewać żę wyniki są mniej stabilne
+- asynchroniczny update
+    - widzimy że isotnie się zmniejsza śerdni ACF, 
+    - ESS nie zmienia się jednoznacznie 
+    
