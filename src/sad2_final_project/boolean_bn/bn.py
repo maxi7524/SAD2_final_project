@@ -539,7 +539,7 @@ def load_bnet_to_BN(file_path: str):
 
     # Return the BN object
     # num_nodes must match the total count of unique symbols
-    print('eee')
+    print("It takes a time")
     return BN(num_nodes=len(sorted_nodes), mode='asynchronous', functions=functions)
 
 if __name__ == "__main__":
