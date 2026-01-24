@@ -59,7 +59,7 @@ def manager_bnfinder(
     # model parameters
     score_functions: list[str] = ["MDL", "BDE"],
     # analysis parameters
-    analysis_metrics: list[str] = ["TP", "FP", "FN", "precision", "recall", "sensitivity", "AHD"],
+    analysis_metrics: list[str] = ['TP', 'FP', 'FN', 'f1', 'accuracy', 'precision', 'recall', 'sensitivity', 'AHD', 'SHD', 'EHD', 'SID'],
     # TODO LIBRARY: add later to scores
     analysis_score_functions: Iterable[Literal["MDL", "BDE"]] = ["MDL", "BDE"],
     # dataset parameters
