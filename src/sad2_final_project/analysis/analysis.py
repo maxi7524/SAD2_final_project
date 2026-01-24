@@ -92,6 +92,8 @@ def loader_obsolete_data(metadata_path: Path | str, results_path: Path | str) ->
         dtype={
             "condition_id": str,
         })
+    
+    print(metadata_df.columns)
     ### rename columns in meta data to obtain 
     metadata_df['condition_id_name'] = metadata_df['condition_id']
     metadata_df['condition_id_num'] = metadata_df['condition_id'].astype(int)
