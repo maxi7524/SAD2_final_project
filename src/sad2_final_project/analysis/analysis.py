@@ -490,8 +490,8 @@ def compute_wilcoxon_table(
     for group_vals, df_sub in df.groupby(list(group_cols)):
         group_dict = dict(zip(group_cols, group_vals))
 
-        ###### 
-        df_sub[df_sub["k_value"].isin([20, 40])][["condition_id_num", "rep_id", "k_value", "AHD"]].head(20)
+        # ###### 
+        # df_sub[df_sub["k_value"].isin([20, 40])][["condition_id_num", "rep_id", "k_value", "AHD"]].head(20)
 
         for metric in metrics:
             for sf_from, sf_to in transitions:
