@@ -143,8 +143,8 @@ def manager_bnfinder(
                 #### Format metrics
                 row = {
                     ##### groups
-                    "dataset": dataset_name,
-                    "score": score,
+                    "condition_id_num": dataset_name,
+                    "score_function": score,
                     ##### dataset parameters
                     "dataset_succeeded": dataset_succeeded,
                     "attractor_ratio": attractor_ratio,

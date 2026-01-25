@@ -423,7 +423,7 @@ def paired_wilcoxon(
     metric,
     sf_from,
     sf_to,
-    id_cols=("rep_id", "num_nodes", "update_mode", "score_function"),
+    id_cols=("num_nodes", "update_mode", "score_function", "trajectory_length"),
     sf_col="sampling_frequency",
     alternative="greater"
 ):
