@@ -2,9 +2,12 @@ import pandas as pd
 import os
 import shutil
 from glob import glob
-base_path = '/Users/chmuradin/Desktop/SAD2_final_project/data/'
+# michał komp
+# base_path = '/Users/chmuradin/Desktop/SAD2_final_project/data/'
+# max komp
+base_path = '/home/maxi7524/repositories/SAD2_final_project/data'
 
-final_dir_name = 'analysis_asynchronous'
+final_dir_name = 'analysis_synchronous'
 
 os.chdir(base_path)
 
@@ -39,7 +42,7 @@ def copy_files_for_row(row, part, final_base_path):
     # 2. HANDLE STANDARD FOLDERS (Exact Match or Padded Match)
     # e.g. Source: "00000.txt" -> Dest: "00300.txt"
     for sub in all_subfolders :
-        source_dir = os.path.join(base_path, f'analysis_3_asynchronous_part_{part}', sub)
+        source_dir = os.path.join(base_path, f'analysis_3_synchronous_part_{part}', sub)
         dest_dir = os.path.join(final_base_path, sub)
 
         if os.path.exists(source_dir):
@@ -78,7 +81,7 @@ def copy_files_for_row(row, part, final_base_path):
     # 3. HANDLE SPECIAL FOLDER (Pattern Match)
     # e.g. Source: "00000_Log.txt" -> Dest: "00300_Log.txt"
     if special_subfolder:
-        special_source_dir = os.path.join(base_path, f'analysis_3_asynchronous_part_{part}', 'results',
+        special_source_dir = os.path.join(base_path, f'analysis_3_synchronous_part_{part}', 'results',
                                           special_subfolder)
         special_dest_dir = os.path.join(final_base_path, special_subfolder)
 
@@ -119,9 +122,9 @@ def process_data_and_files(parts, output_metadata, output_joined):
 
     # 2. Main Loop over Parts
     for part in parts:
-        base_results_path = os.path.join(base_path, f'analysis_3_asynchronous_part_{part}', 'results')
+        base_results_path = os.path.join(base_path, f'analysis_3_synchronous_part_{part}', 'results')
         meta_path = os.path.join(base_results_path, 'metadata.csv')
-        joined_path = os.path.join(base_results_path, f'joined_results_analysis_3_asynchronous_part_{part}.csv')
+        joined_path = os.path.join(base_results_path, f'joined_results_analysis_3_synchronous_part_{part}.csv')
 
         if os.path.exists(meta_path):
             print(f"Processing Part {part} (ID Offset: {global_id_offset})...")
@@ -153,10 +156,10 @@ def process_data_and_files(parts, output_metadata, output_joined):
                 df_joined = pd.read_csv(joined_path)
 
                 # Apply the EXACT SAME offset to joined_results
-                if 'condition_id_name' in df_joined.columns:
-                    df_joined['condition_id_name'] = df_joined['condition_id_name'].apply(pad_condition_id,
+                if 'dataset' in df_joined.columns:
+                    df_joined['dataset'] = df_joined['dataset'].apply(pad_condition_id,
                                                                                           offset=global_id_offset)
-                    df_joined['condition_id_num'] = df_joined['condition_id_name'].astype(int)
+                    df_joined['dataset'] = df_joined['dataset'].astype(int)
 
                 df_joined['part'] = part
                 df_joined_list.append(df_joined)
@@ -176,12 +179,15 @@ def process_data_and_files(parts, output_metadata, output_joined):
         final_meta = pd.concat(df_metadata_list, ignore_index=True)
         final_meta.to_csv(os.path.join(base_path, output_metadata), index=False)
         print(f"SUCCESS: Combined Metadata saved to {output_metadata}")
+        # TODO przenieść plik
+
 
     if df_joined_list:
         final_joined = pd.concat(df_joined_list, ignore_index=True)
         final_joined.to_csv(os.path.join(base_path, output_joined), index=False)
         print(f"SUCCESS: Combined Joined Results saved to {output_joined}")
+        # TODO przenieść plik 
 
 
 # Execute
-process_data_and_files(range(1, 8), 'combined_metadata.csv', 'combined_joined_results.csv')
+process_data_and_files(range(1, 8), 'metadata.csv', 'results.csv')

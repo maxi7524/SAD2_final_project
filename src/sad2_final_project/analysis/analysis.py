@@ -72,7 +72,7 @@ def loader_current_data(metadata_path: Path | str, results_path: Path | str) -> 
 
     ## merge 
     ### remove duplicates
-    #results_df = results_df.drop(columns=['score_function'])
+    results_df = results_df.drop(columns=['score_function'])
     ### merge be outer join
     df = results_df.merge(metadata_df, how='outer', on='condition_id_num')
     return df
