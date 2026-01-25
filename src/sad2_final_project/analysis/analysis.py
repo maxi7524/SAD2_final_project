@@ -549,7 +549,7 @@ def plot_grouped_boxplots(
     x_col,                  # wartość na osi X, np. "sampling_frequency"
     y_cols,                 # wartośc na si Y, np. ["AHD", "SID"] albo ["mean_lag1_acf", "mean_ess"]
     hue_col,                # jakie kategoryzuje, np. "num_nodes"
-    hue_palette,            # odcień kategorii 
+    hue_palette=category_colors,            # odcień kategorii 
     facet_col=category_colors,         # zmienne panelowe, np. "score_function"
     facet_levels=None,      # kolejność paneli np. ["MDL", "BDE"]
     main_title="",          # tytuł całej figury
