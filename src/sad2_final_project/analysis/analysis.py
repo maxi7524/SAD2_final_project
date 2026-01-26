@@ -782,7 +782,9 @@ def plot_wilcoxon_heatmap(
     update_mode,
     transitions_order,
     ax=None,
-    cbar=True
+    cbar=True,
+    vmin=None,
+    vmax=None,
 ):
     df_sub = df[
         (df["metric"] == metric) &
@@ -796,6 +798,8 @@ def plot_wilcoxon_heatmap(
         index_col="transition",
         column_col="score_function",
         index_order=transitions_order,
+        vmin=vmin,
+        vmax=vmax,
         center=0,
         cmap="coolwarm",
         value_fmt="{:.2f}",
