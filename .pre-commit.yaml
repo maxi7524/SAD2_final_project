@@ -6,12 +6,12 @@
 #       - id: nbstripout
 
 
-repos:
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.1
-    hooks:
-      - id: nbstripout
-        args:
-          - --keep-output
-          - --extra-keys
-          - metadata.execution_count
+# repos:
+#   - repo: https://github.com/kynan/nbstripout
+#     rev: 0.6.1
+#     hooks:
+#       - id: nbstripout
+#         args:
+#           - --keep-output
+#           - --extra-keys
+#           - metadata.execution_count
