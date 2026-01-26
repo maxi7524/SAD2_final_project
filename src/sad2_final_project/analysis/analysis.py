@@ -905,7 +905,8 @@ def plot_boxplot(
     title,
     palette=category_colors,
     ax=None,
-    show_legend=True
+    show_legend=True,
+    y_label=None
 ):
     """
     Create a styled boxplot and return fig, ax.
@@ -941,7 +942,11 @@ def plot_boxplot(
     # Titles and labels
     ax.set_title(title, fontsize=16)
     ax.set_xlabel(x, fontsize=14)
-    ax.set_ylabel(y, fontsize=14)
+    if y_label:
+        y_text = y_label
+    else:
+        y_text = y
+    ax.set_ylabel(y_text, fontsize=14)
 
     if show_legend:
         ax.legend(title=hue, loc='center left', bbox_to_anchor=(1, 0.5))
