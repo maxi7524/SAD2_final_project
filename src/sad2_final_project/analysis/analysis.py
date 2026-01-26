@@ -486,7 +486,9 @@ def compute_wilcoxon_table(
     metrics,
     transitions,
     group_cols=("update_mode", "score_function"),
-    sf_col="sampling_frequency"
+    sf_col="sampling_frequency",
+    alternative="greater"
+
 ):
     """
     Liczy wszystkie testy Wilcoxona i zwraca DataFrame.
@@ -508,7 +510,8 @@ def compute_wilcoxon_table(
                     metric=metric,
                     sf_from=sf_from,
                     sf_to=sf_to,
-                    sf_col=sf_col
+                    sf_col=sf_col,
+                    alternative=alternative
                 )
 
                 if res is not None:
