@@ -12,6 +12,8 @@ from scipy.stats import wilcoxon, spearmanr
 from pathlib import Path
 from typing import List
 
+from sad2_final_project.analysis import experiment
+
 # ---------------------------
 # Global style
 # ---------------------------
@@ -39,7 +41,6 @@ category_colors = [
 
 
 
-
 # --------------------------------------------------
 # MAx
 # --------------------------------------------------
@@ -52,10 +53,16 @@ category_colors = [
 
 
 # CURRENT DATA
-def loader_current_data(metadata_path: Path | str, results_path: Path | str) -> pd.DataFrame:
+
+def experiment_data_loader(experiment_path: Path | str) -> pd.DataFrame:
     '''
     Loads data in obsolete format into one dataframe
     '''
+    ## Obtain paths for csv
+    experiment_path = Path(experiment_path)
+    metadata_path = experiment_path / 'results/metadata.csv'
+    results_path = experiment_path / 'results/results.csv'
+
     ## metadata
     ### load metadata into df
     metadata_df = pd.read_csv(
