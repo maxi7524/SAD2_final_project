@@ -1,10 +1,6 @@
-Below is a **clean, ready-to-paste README.md** written fully in English, structured exactly around your requirements and using your provided content. I kept the tone academic/technical, suitable for a semester project repository.
-
----
-
 # SAD2 Final Project — Boolean Network Sampling Analysis
 
-## 1. Project Description
+## Project Description
 
 This project investigates **sampling strategies for Boolean Network reconstruction** using **BNFinder2**.
 The main goal was to test how different **sampling parameters** influence reconstruction quality and to **identify optimal parameter configurations** under various network settings.
@@ -90,7 +86,7 @@ The notebook provides a ready-to-use validation script; only the model file need
 To fully reproduce the results presented in the report:
 
 1. Configure the environment using **uv** (see Setup section below).
-2. Download the experimental datasets [how](#Experimental-Data).
+2. Download the experimental datasets [section-link](#Experimental-Data).
 3. Run the notebook follwing notebook - [notebooks/notebook_report.ipynb](https://github.com/maxi7524/SAD2_final_project/blob/main/notebooks/notebook_report.ipynb).
 
 Configuration of python2 is not required.
