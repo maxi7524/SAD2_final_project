@@ -2,59 +2,36 @@
 
 ---
 
-## Initialization
-
-To use this project after forking the repository, follow these steps:
-
-### Step 0 — Install `uv`
-
-[`uv`](https://github.com/astral-sh/uv) is a fast Python package and environment manager.
-
-```bash
-# macOS / Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-```powershell
-# Windows
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-### Step 1 — Synchronize dependencies
-
-```bash
-uv sync
-```
-
-### Step 2 — Activate environment
-
-```bash
-source .venv/bin/activate
-```
-
-### Step 3 — Install the project in development mode
-
-```bash
-uv pip install -e .
-```
-
-### Step 4 — Run a script
-
-```bash
-uv run python path/to/script.py
-```
-
----
-
 ## 1. Project Description
 
-The purpose of this project is to investigate how the type and amount of data describing network dynamics influence the accuracy of reconstructing network structures within the framework of **dynamic Bayesian networks (DBNs)**.
+The purpose of this project is to investigate how sampling parameters affects training and what are optimal values. 
 
-In **Part I**, synthetic Boolean networks of varying sizes are constructed with randomly generated Boolean functions and limited parent dependencies. These networks are simulated under both synchronous and asynchronous update modes to generate trajectory datasets. The datasets vary in trajectory length, sampling frequency, and the proportion of attractor versus transient states, enabling a systematic study of factors affecting network reconstruction.
+
+The purpose of this project is to investigate how sampling parameters influence network dynamics influence the accuracy of reconstructing network structures within the framework of **dynamic Bayesian networks (DBNs)**.
+
+In **Part I**, we tried to find optimal data sampling 
+
+synthetic Boolean networks of varying sizes are constructed with randomly generated Boolean functions and limited parent dependencies. These networks are simulated under both synchronous and asynchronous update modes to generate trajectory datasets. The datasets vary in trajectory length, sampling frequency, and the proportion of attractor versus transient states, enabling a systematic study of factors affecting network reconstruction.
 
 Dynamic Bayesian networks are inferred from the simulated datasets using the **BNFinder2** software tool, employing the **Minimal Description Length (MDL)** and **Bayesian–Dirichlet equivalence (BDe)** scoring functions. The reconstructed networks are then evaluated against the original Boolean networks using graph-based distance metrics, providing a quantitative assessment of reconstruction accuracy.
 
 In **Part II**, the methodology and insights gained from synthetic experiments are applied to reconstruct the structure of a validated biological network model selected from the **Biodivine** repository, demonstrating the practical relevance of the approach for real biological systems.
+
+
+
+### Results 
+
+
+## 2. Usage
+
+You can:
+* Create Boolean networks using the `BN` class with following functionality:
+  - attractor calculation,
+  - simulating trajectories, for given length and subsampling parameter 
+  - Visualize state transition systems.
+  - Save ground-truth networks to CSV.
+* Load `.bnet` models using `load_bnet_to_BN`.
+* TODO notebook with 
 
 ---
 
@@ -72,99 +49,11 @@ In **Part II**, the methodology and insights gained from synthetic experiments a
 
 ---
 
-## 3. Installation / Setup
-
-This project uses a **wrapper architecture** integrating **Python 3** (project code) and **Python 2** (BNFinder2).
-
----
-
-### Python 3 Environment (Main Project Code)
-
-**Dependencies:**
-
-| Package      | Purpose              |
-| ------------ | -------------------- |
-| `pandas`     | Data handling        |
-| `numpy`      | Numerical operations |
-| `matplotlib` | Visualization        |
-| `networkx`   | Graph representation |
-
-**Setup:**
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# Windows: .venv\Scripts\activate
-pip install pandas numpy matplotlib networkx
-```
-
----
-
-### Python 2.7 Environment (BNFinder2)
-
-BNFinder2 requires Python 2.7.
-
-```bash
-# Download and install Python 2.7.18
-wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
-tar -xvf Python-2.7.18.tgz
-cd Python-2.7.18
-./configure --enable-optimizations
-make
-sudo make install
-
-# Verify
-python2 --version
-
-# Install pip
-curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-python2 get-pip.py
-
-# Install dependencies
-python2 -m pip install numpy==1.16.6 scipy==1.2.3 fpconst BNfinder
-
-# Clean up
-rm -rf Python-2.7.18.tgz
-which bnf
-```
-
-> ⚠️ **Note:** BNFinder2 is not compatible with Python 3. The wrapper bridges both environments.
-
----
-
-### Optional: Using `uv` (Recommended)
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
-# Windows:
-# powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-uv sync
-source .venv/bin/activate
-uv pip install -e .
-```
-
-Run scripts using:
-
-```bash
-uv run python path/to/script.py
-```
-
----
-
-### Troubleshooting
-
-| Error                               | Solution                                                        |
-| ----------------------------------- | --------------------------------------------------------------- |
-| `"Could not find 'bnf' executable"` | Ensure BNFinder2 is in your PATH                                |
-| `"ValueError: '1' is not in list"`  | Input formatting issue — wrapper auto-fixes with `#default 0 1` |
-
----
-
 ## Relevant File Structure
 
 | Path                                 | Purpose                                              |
 |--------------------------------------|------------------------------------------------------|
+| `src`            | Folder with whole library
 | `src/sad2_final_project/`            | Core project source code                             |
 | `src/sad2_final_project/boolean_bn/`| Boolean network generation and simulation logic      |
 | `src/sad2_final_project/bnfinder/`   | BNFinder2 wrapper and interface                      |
@@ -178,110 +67,84 @@ uv run python path/to/script.py
 | `pyproject.toml`                    | Project configuration and dependencies               |
 | `README.md`                         | Project documentation                                |
 
-## 4. Usage
 
-You can:
+--------------------------------------------------------------------- TO JEST KONIEC
 
-* Create Boolean networks using the `BN` class.
-* Simulate trajectories and retrieve attractors.
-* Save ground-truth networks to CSV.
-* Visualize state transition systems.
-* Load `.bnet` models using `load_bnet_to_BN`.
+## Setup up repository
 
-*(Optional: Add example code snippets or screenshots here.)*
+To use this project after forking the repository, follow these steps:
 
----
+### Python 3
 
-## 5. Project Workflow / Methodology
+#### Step 0 — Install `uv`
 
-The project follows a structured experimental pipeline consisting of two main parts.
+[`uv`](https://github.com/astral-sh/uv) is a fast Python package and environment manager.
 
----
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-### **Part I — Synthetic Boolean Networks**
+```powershell
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-#### 1. Network Construction
+#### Step 1 — Synchronize dependencies
 
-Boolean networks are generated with configurable sizes and random Boolean functions. Each node is restricted to a small number of parent nodes (typically 1–3) to reflect realistic biological dependencies.
+```bash
+uv sync
+```
 
-#### 2. Trajectory Simulation
+#### Step 2 — Activate environment
 
-Networks are simulated under both synchronous and asynchronous update modes. Trajectories originate from random initial states and evolve according to the network’s Boolean functions. Sampling frequency, trajectory length, and the ratio of attractor to transient states are varied to create diverse datasets.
+```bash
+source .venv/bin/activate
+```
 
-#### 3. Dataset Creation
+#### Step 3 — Install the project in development mode
 
-Multiple trajectories are combined into datasets suitable for Bayesian network reconstruction. Each dataset is registered, and only information indicating whether it satisfies the specified attractor-to-transient ratio criteria is recorded, ensuring experimental consistency without discarding any datasets.
+```bash
+uv pip install -e .
+```
 
-#### 4. Bayesian Network Reconstruction
+#### Step 4 — Run a script
 
-Dynamic Bayesian networks are inferred using BNFinder2. Two scoring functions are applied: **Minimal Description Length (MDL)** and **Bayesian–Dirichlet equivalence (BDe)**.
+```bash
+uv run python path/to/script.py
+```
 
-#### 5. Evaluation
+### Python 2
 
-Reconstructed networks are compared to ground truth using graph-based metrics, including:
+To install python2 you need to run following script **in repository folder**, it can take 20-30 minutes.
 
-| Metric                           | Purpose                  |
-| -------------------------------- | ------------------------ |
-| True Positives / False Positives | Structural accuracy      |
-| Precision / Recall               | Reconstruction quality   |
-| Average Hamming Distance         | Structural dissimilarity |
+```shell
+wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz
+tar -xvf Python-2.7.18.tgz
+cd Python-2.7.18
+./configure --enable-optimizations
+make
+sudo make install
+python2 --version
+python2 -m pip --version
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+python2 get-pip.py
+python2 -m pip --version
+python2 -m pip install "numpy==1.16.6"
+python2 -m pip install fpconst
+python2 -m pip install "scipy==1.2.3"
+python2 pip install BNfinder
+python2 -m pip install BNfinder
+rm Python-2.7.18.tgz 
+which bnf
+```
 
----
+#### Troubleshooting
 
-### **Part II — Real Biological Networks**
-
-#### 1. Model Selection
-
-A validated Boolean network model is selected from the Biodivine repository.
-
-#### 2. Dataset Generation and BN Inference
-
-Using insights from Part I, suitable datasets are generated and BNFinder2 is applied to reconstruct the network.
-
-#### 3. Evaluation
-
-The inferred network is compared to the known biological network using the same evaluation metrics.
-
----
-
-### **Experimental Design & Parameter Variation**
-
-| Parameter                     | Variations                 |
-| ----------------------------- | -------------------------- |
-| Number of nodes               | 5–16                       |
-| Update mode                   | Synchronous / Asynchronous |
-| Trajectory length             | Variable                   |
-| Number of trajectories        | Variable                   |
-| Sampling frequency            | Variable                   |
-| Attractor vs. transient ratio | Controlled                 |
-
-Experiments are repeated across multiple random seeds to ensure statistical robustness. All steps are automated and support batch and parallel execution.
-
----
-
-## 6. Evaluation / Results
-
-This section summarizes:
-
-* Evaluation methodology (graph distance metrics, comparison with ground truth).
-* Key findings and insights.
-* Optionally: example plots, tables, or figures.
-
-*(You may link to your full report or include summary figures here.)*
-
----
-
-## 7. Project Report
-
-The full project report includes:
-
-* Detailed experimental setup.
-* Generated datasets.
-* Methodological justification.
-* Results and visualizations.
-* Individual contributions (for group work).
-
-*(Insert link or file path here.)*
+| Error                               | Solution                                                        |
+| ----------------------------------- | --------------------------------------------------------------- |
+| `"Could not find 'bnf' executable"` | Ensure BNFinder2 is in your PATH                                |
+| `"ValueError: '1' is not in list"`  | Input formatting issue — wrapper auto-fixes with `#default 0 1` |
 
 ---
 
