@@ -48,10 +48,10 @@ Alternatively, you can use the provided script to download and unpack the data a
 
 The project was developed by:
 
-* **Michał Chmura**
-* **Joanna Huba**
-* **Jan Szot**
-* **Max Stróżyk**
+* [**Michał Chmura**](https://github.com/Chmuradin)
+* [**Joanna Huba**](https://github.com/joannahuba)
+* [**Jan Szot**](https://github.com/jszot)
+* [**Max Stróżyk**](https://github.com/maxi7524)
 
 ---
 
