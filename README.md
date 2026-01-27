@@ -61,7 +61,7 @@ The project was developed by:
 
 If you want to generate datasets with metrics for your own experiments, use:
 
-* `notebooks/notebook_datasets.ipynb`
+* [`notebooks/notebook_datasets.ipynb`](https://github.com/maxi7524/SAD2_final_project/blob/main/notebooks/notebook_datasets.ipynb)
 
 This notebook allows you to reproduce or modify the data generation process used in the experiments.
 
@@ -72,7 +72,7 @@ To test your own Boolean network model:
 1. Place the model in `.bnet` format inside the `download_models/` directory.
 2. Follow the directory structure:
 
-   ```
+   ```shell
    download_models/model_id/model_bnet.bnet
    ```
 3. Open and run:
