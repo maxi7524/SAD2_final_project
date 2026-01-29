@@ -16,7 +16,12 @@ These groups were analyzed independently to identify differences in behavior and
 
 Reconstruction quality was evaluated using AHD and SID metrics, as they are normalized and provide information about topological and reasoning errors.
 
-### Final Results — Optimal Parameters
+Other experiments that could be done:
+- we should also test how big difference is between reconstruction quality metrics, between cases of MDL and BDe score function, to find which score function is best for for certain scenario. 
+
+### Final Results
+
+#### Optimal Parameters
 
 | Network type  | Cost function | Network size condition | Optimal sampling factor | Recommended k value |
 |---------------|---------------|-------------------------|----------------------------|----------------|
@@ -26,6 +31,43 @@ Reconstruction quality was evaluated using AHD and SID metrics, as they are norm
 | Asynchronous  | MDL           | any                     | 2                          | 100            |
 
 For all networks recommended length of trajectory is $0.8 \cdot \text{number of nodes}$.
+
+#### Improvement  rate
+All cases are significant ($p-\mathrm{value} < 0.0001$)
+
+##### Synchronous
+Synchronous results are better, because in baseline we probably overfitted our models. 
+
+**AHD**
+
+| Scoring function | Mean improvement | Median improvement | Relative improvement (median / $Z[p]$)    |
+| ---------------- | ---------------- | ------------------ | -------------------- |
+| MDL              | 0.07             | 0.07               | 16% – 35%            |
+| BDE              | 0.05             | 0.06               | 13% – 30% (median)   |
+
+**SID**
+
+| Scoring function | Mean improvement | Median improvement | Relative improvement / (median / $Z[p]$) |
+| ---------------- | ---------------- | ------------------ | -------------------- |
+| MDL              | 3.26             | 1.36               | 2% – 6% (median)     |
+| BDE              | 4.93             | 3.60               | 7% – 18% (median)    |
+
+##### Asynchronous
+
+**AHD**
+
+| Scoring function | Mean difference | Median difference | Relative improvement / (median / $Z[p]$)  |
+| ---------------- | --------------- | ----------------- | --------------------- |
+| BDE              | 0.02            | 0.02              | 6% – 13%              |
+| MDL              | –               | –                 | no significant change |
+
+
+**SID**
+
+| Scoring function | Mean difference | Median difference | Relative improvement (median / $Z[p]$)         |
+| ---------------- | --------------- | ----------------- | -------------------------------------------- |
+| BDE              | −2.5            | −1.5              | 4% – 8% (median), 7% – 14% (mean) |
+| MDL              | –               | –                 | 1% – 2%                                      |
 
 ---
 

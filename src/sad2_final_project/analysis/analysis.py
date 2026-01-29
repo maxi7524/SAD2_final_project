@@ -447,6 +447,11 @@ def paired_wilcoxon(
         on=list(id_cols),
         suffixes=(f"_{sf_from}", f"_{sf_to}")
     )
+    # dropping Na values
+    merged = merged.dropna(
+        subset=[f"{metric}_{sf_from}", f"{metric}_{sf_to}"]
+    )
+
 
     if len(merged) < 10:
         return None
@@ -788,6 +793,10 @@ def plot_wilcoxon_heatmap(
     cbar=True,
     vmin=None,
     vmax=None,
+    # labels
+    xlabel="Score function",
+    ylabel="Sampling frequency transition",
+    cbar_label = "Median difference (lower = improvement)"
 ):
     df_sub = df[
         (df["metric"] == metric) &
@@ -808,10 +817,10 @@ def plot_wilcoxon_heatmap(
         value_fmt="{:.2f}",
         signif_func=signif_stars,
         cbar=cbar,
-        cbar_label="Median difference (lower = improvement)",
+        cbar_label=cbar_label,
         title=metric,
-        xlabel="Score function",
-        ylabel="Sampling frequency transition",
+        xlabel=xlabel,
+        ylabel=ylabel,
         ax=ax
     )
 ## spearman aggregation
