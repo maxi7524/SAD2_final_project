@@ -5,7 +5,7 @@
 This project investigates **sampling strategies for Boolean Network reconstruction** using **BNFinder2**.
 The main goal was to test how different **sampling parameters** influence reconstruction quality and to **identify optimal parameter configurations** under various network settings.
 
-The work was conducted as a **semester project** for a university course; the full course assignment and background materials are available in the [docs/](https://github.com/maxi7524/SAD2_final_project/blob/main/docs/bnfinder_tutorial.pdf) directory.
+The work was conducted as a **semester project** for a university course; the full course assignment and background materials are available in the [docs/](https://github.com/maxi7524/SAD2_final_project/blob/main/docs) directory.
 All experiments and optimization procedures were designed specifically for compatibility with the **BNFinder2** library.
 
 The experiments were conducted by explicitly separating the analysis into distinct groups:
