@@ -73,9 +73,10 @@ Synchronous results are better, because in baseline we probably overfitted our m
 
 ## Full Report and Methodology
 
-A detailed description of the **methodology**, **experimental setup**, and **result analysis** is available in the following notebook:
+A detailed description of the **methodology**, **experimental setup**, and **result analysis** is available in the following document:
 
-* [`notebooks/notebook_report.ipynb`](https://github.com/maxi7524/SAD2_final_project/blob/main/notebooks/notebook_report.ipynb)
+* [ipynb version - `notebooks/notebook_report.ipynb`](https://github.com/maxi7524/SAD2_final_project/blob/main/notebooks/notebook_report.ipynb)
+* [html version - `notebooks/notebook_report.html`](https://github.com/maxi7524/SAD2_final_project/blob/main/notebooks/notebook_report.html)
 ### Experimental Data
 
 The datasets used in the experiments can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1fbIJiBIGMP9HivtoPEkko7hT6t2mXH0n):
